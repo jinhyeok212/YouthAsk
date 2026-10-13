@@ -1,35 +1,124 @@
 from __future__ import annotations
 
-from src.common.io import read_jsonl
+import json
+from collections import Counter
+from pathlib import Path
+from typing import Any
 
 
-def validate_chunks(chunk_path: str, valid_document_ids: set[str]) -> int:
-    """chunks.jsonl의 연결성/중복/순서를 검증하고 청크 수를 반환한다."""
-    rows = read_jsonl(chunk_path)
-    seen: set[str] = set()
+def _read_jsonl(path: Path) -> list[dict[str, Any]]:
+    with path.open("r", encoding="utf-8") as handle:
+        return [json.loads(line) for line in handle if line.strip()]
+
+
+def _document_id(document: dict[str, Any]) -> str:
+    return str(document.get("document_id") or document.get("doc_id") or "").strip()
+
+
+def validate_chunks(
+    documents_path: str | Path,
+    chunks_path: str | Path,
+    *,
+    chunk_size: int,
+    overlap: int,
+    strict_max_length: bool = True,
+) -> dict[str, Any]:
+    """Validate chunk artifacts before embedding/indexing stages consume them."""
+    documents_path = Path(documents_path)
+    chunks_path = Path(chunks_path)
+
+    if chunk_size <= 0:
+        raise ValueError("chunk_size는 0보다 커야 합니다.")
+    if overlap < 0 or overlap >= chunk_size:
+        raise ValueError("overlap은 0 이상이고 chunk_size보다 작아야 합니다.")
+    if not documents_path.exists():
+        raise ValueError(f"documents.jsonl 파일이 없습니다: {documents_path}")
+    if not chunks_path.exists():
+        raise ValueError(f"chunks.jsonl 파일이 없습니다: {chunks_path}")
+
+    documents = _read_jsonl(documents_path)
+    chunks = _read_jsonl(chunks_path)
+
+    document_ids = [_document_id(document) for document in documents]
+    valid_document_ids = {document_id for document_id in document_ids if document_id}
+    if not valid_document_ids:
+        raise ValueError("documents.jsonl에 유효한 document_id가 없습니다.")
+
+    errors: list[str] = []
+    chunk_ids: list[str] = []
+    blank_chunk_count = 0
+    missing_document_id_count = 0
+    invalid_document_refs: list[str] = []
+    invalid_char_length_count = 0
+    over_size_count = 0
+    invalid_order_count = 0
     per_doc_last_index: dict[str, int] = {}
 
-    for row in rows:
-        cid = str(row.get("chunk_id", "")).strip()
-        did = str(row.get("document_id", "")).strip()
-        text = str(row.get("text", "")).strip()
-        idx = row.get("chunk_index")
+    for row_number, chunk in enumerate(chunks, start=1):
+        chunk_id = str(chunk.get("chunk_id") or chunk.get("id") or "").strip()
+        document_id = str(chunk.get("document_id") or "").strip()
+        text = str(chunk.get("text") or "")
 
-        if not cid or not did or not text:
-            raise ValueError(f"빈 Chunk 필드가 있습니다: chunk_id={cid}, document_id={did}")
-        if cid in seen:
-            raise ValueError(f"중복 chunk_id가 존재합니다: {cid}")
-        if did not in valid_document_ids:
-            raise ValueError(f"존재하지 않는 document_id 참조: chunk_id={cid}, document_id={did}")
-        if not isinstance(idx, int) or idx < 0:
-            raise ValueError(f"잘못된 chunk_index: chunk_id={cid}, chunk_index={idx}")
+        if not chunk_id:
+            errors.append(f"{row_number}번째 chunk에 chunk_id가 없습니다.")
+        else:
+            chunk_ids.append(chunk_id)
 
-        previous = per_doc_last_index.get(did, -1)
-        if idx != previous + 1:
-            raise ValueError(
-                f"청크 순서 오류: document_id={did}, expected={previous + 1}, actual={idx}"
-            )
-        per_doc_last_index[did] = idx
-        seen.add(cid)
+        if not document_id:
+            missing_document_id_count += 1
+            errors.append(f"{row_number}번째 chunk에 document_id가 없습니다.")
+        elif document_id not in valid_document_ids:
+            invalid_document_refs.append(document_id)
 
-    return len(rows)
+        if not text.strip():
+            blank_chunk_count += 1
+            errors.append(f"{row_number}번째 chunk의 text가 비어 있습니다.")
+
+        if "char_length" in chunk and int(chunk.get("char_length") or 0) != len(text):
+            invalid_char_length_count += 1
+
+        chunk_index = chunk.get("chunk_index")
+        previous = per_doc_last_index.get(document_id, -1)
+        if not isinstance(chunk_index, int) or chunk_index != previous + 1:
+            invalid_order_count += 1
+        else:
+            per_doc_last_index[document_id] = chunk_index
+
+        # fixed 전략은 최종 text 길이가 chunk_size 이하여야 한다.
+        # section/C2 전략은 title prefix가 붙을 수 있어 최종 text가 size보다 길 수 있다.
+        if strict_max_length and len(text) > chunk_size:
+            over_size_count += 1
+
+    duplicate_chunk_ids = sorted(
+        chunk_id for chunk_id, count in Counter(chunk_ids).items() if count > 1
+    )
+    chunk_document_ids = {str(chunk.get("document_id") or "").strip() for chunk in chunks}
+    missing_chunk_document_ids = sorted(valid_document_ids - chunk_document_ids)
+
+    if duplicate_chunk_ids:
+        errors.append(f"중복 chunk_id가 존재합니다: {duplicate_chunk_ids[:5]}")
+    if invalid_document_refs:
+        errors.append(f"원본 문서에 없는 document_id가 chunk에 있습니다: {sorted(set(invalid_document_refs))[:5]}")
+    if invalid_char_length_count:
+        errors.append(f"char_length가 실제 text 길이와 다른 chunk가 {invalid_char_length_count}개 있습니다.")
+    if invalid_order_count:
+        errors.append(f"document_id별 chunk_index 순서가 잘못된 chunk가 {invalid_order_count}개 있습니다.")
+    if over_size_count:
+        errors.append(f"chunk_size보다 긴 chunk가 {over_size_count}개 있습니다.")
+    if missing_chunk_document_ids:
+        errors.append(f"chunk가 생성되지 않은 document_id가 있습니다: {missing_chunk_document_ids[:5]}")
+
+    if errors:
+        raise ValueError("청킹 검증 실패:\n- " + "\n- ".join(errors))
+
+    return {
+        "valid": True,
+        "document_count": len(documents),
+        "chunk_count": len(chunks),
+        "duplicate_chunk_id_count": len(duplicate_chunk_ids),
+        "blank_chunk_count": blank_chunk_count,
+        "missing_document_id_count": missing_document_id_count,
+        "missing_chunk_document_id_count": len(missing_chunk_document_ids),
+        "invalid_order_count": invalid_order_count,
+    }
+
