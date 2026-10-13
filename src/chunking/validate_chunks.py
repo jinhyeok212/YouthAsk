@@ -21,6 +21,7 @@ def validate_chunks(
     *,
     chunk_size: int,
     overlap: int,
+    strict_max_length: bool = True,
 ) -> dict[str, Any]:
     """Validate chunk artifacts before embedding/indexing stages consume them."""
     documents_path = Path(documents_path)
@@ -50,6 +51,8 @@ def validate_chunks(
     invalid_document_refs: list[str] = []
     invalid_char_length_count = 0
     over_size_count = 0
+    invalid_order_count = 0
+    per_doc_last_index: dict[str, int] = {}
 
     for row_number, chunk in enumerate(chunks, start=1):
         chunk_id = str(chunk.get("chunk_id") or chunk.get("id") or "").strip()
@@ -74,9 +77,16 @@ def validate_chunks(
         if "char_length" in chunk and int(chunk.get("char_length") or 0) != len(text):
             invalid_char_length_count += 1
 
-        # Overlap can make source spans shorter, but emitted text should not exceed
-        # the configured character chunk size for this simple character splitter.
-        if len(text) > chunk_size:
+        chunk_index = chunk.get("chunk_index")
+        previous = per_doc_last_index.get(document_id, -1)
+        if not isinstance(chunk_index, int) or chunk_index != previous + 1:
+            invalid_order_count += 1
+        else:
+            per_doc_last_index[document_id] = chunk_index
+
+        # fixed 전략은 최종 text 길이가 chunk_size 이하여야 한다.
+        # section/C2 전략은 title prefix가 붙을 수 있어 최종 text가 size보다 길 수 있다.
+        if strict_max_length and len(text) > chunk_size:
             over_size_count += 1
 
     duplicate_chunk_ids = sorted(
@@ -91,6 +101,8 @@ def validate_chunks(
         errors.append(f"원본 문서에 없는 document_id가 chunk에 있습니다: {sorted(set(invalid_document_refs))[:5]}")
     if invalid_char_length_count:
         errors.append(f"char_length가 실제 text 길이와 다른 chunk가 {invalid_char_length_count}개 있습니다.")
+    if invalid_order_count:
+        errors.append(f"document_id별 chunk_index 순서가 잘못된 chunk가 {invalid_order_count}개 있습니다.")
     if over_size_count:
         errors.append(f"chunk_size보다 긴 chunk가 {over_size_count}개 있습니다.")
     if missing_chunk_document_ids:
@@ -107,5 +119,6 @@ def validate_chunks(
         "blank_chunk_count": blank_chunk_count,
         "missing_document_id_count": missing_document_id_count,
         "missing_chunk_document_id_count": len(missing_chunk_document_ids),
+        "invalid_order_count": invalid_order_count,
     }
 
