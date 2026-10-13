@@ -1,0 +1,23 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "EvaluationResult",
+  "type": "object",
+  "required": ["metrics_summary", "metrics_by_query", "failure_cases"],
+  "properties": {
+    "metrics_summary": {
+      "type": "object",
+      "required": ["document_hit_at_1", "document_hit_at_3", "document_hit_at_5", "document_mrr", "chunk_hit_at_1", "chunk_hit_at_3", "chunk_hit_at_5", "chunk_mrr", "average_retrieval_latency_ms", "p95_retrieval_latency_ms", "question_count", "status"],
+      "patternProperties": {
+        "^(document|chunk)_(hit_at_[135]|mrr)$": {"type": "number", "minimum": 0, "maximum": 1}
+      },
+      "properties": {
+        "question_count": {"type": "integer", "minimum": 1},
+        "status": {"enum": ["COMPLETED", "FAILED"]},
+        "average_retrieval_latency_ms": {"type": "number", "minimum": 0},
+        "p95_retrieval_latency_ms": {"type": "number", "minimum": 0}
+      }
+    },
+    "metrics_by_query": {"type": "array", "minItems": 1, "items": {"type": "object", "required": ["query_id", "document", "chunk"]}},
+    "failure_cases": {"type": "array", "items": {"type": "object", "required": ["query_id", "failure_type"]}}
+  }
+}
