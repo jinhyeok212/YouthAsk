@@ -66,6 +66,21 @@ def test_validate_documents_config_returns_dataset_info(tmp_path, monkeypatch):
     assert info["preprocessing_version"] == "prep_v1"
 
 
+def test_validate_documents_config_creates_missing_runner_manifest(tmp_path, monkeypatch):
+    monkeypatch.chdir(tmp_path)
+    prepare_documents(tmp_path, [valid_doc()])
+    config = base_config(tmp_path)
+
+    info = validate_documents(config)
+
+    manifest_path = tmp_path / info["manifest_path"]
+    assert manifest_path.exists()
+    manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+    assert manifest["dataset_version"] == "ontong_youth_full_v1"
+    assert manifest["document_count"] == 1
+    assert manifest["sha256"] == info["sha256"]
+
+
 def test_validate_documents_config_rejects_duplicate_ids(tmp_path, monkeypatch):
     monkeypatch.chdir(tmp_path)
     data_dir = tmp_path / "data" / "processed" / "ontong_youth_full_v1"

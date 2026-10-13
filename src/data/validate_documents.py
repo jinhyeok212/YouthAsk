@@ -235,8 +235,6 @@ def validate_dataset_files(config: dict[str, Any]) -> dict[str, Any]:
 
     if not document_path.exists():
         raise FileNotFoundError(f"documents.jsonl not found: {document_path}")
-    if not manifest_path.exists():
-        raise FileNotFoundError(f"dataset_manifest.json not found: {manifest_path}")
 
     rows_with_lines = read_jsonl_with_line_numbers(document_path)
     documents = [row for _, row in rows_with_lines]
@@ -259,7 +257,22 @@ def validate_dataset_files(config: dict[str, Any]) -> dict[str, Any]:
         raise ValueError("Document validation failed: " + "; ".join(blocking_errors) + ("\n" + detail if detail else ""))
 
     sha256 = sha256_file(document_path)
-    manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+    default_manifest = {
+        "dataset_version": str(dataset.get("version", "")).strip(),
+        "preprocessing_version": str(dataset.get("preprocessing_version", "")).strip(),
+        "document_path": str(document_path.relative_to(root).as_posix()),
+        "document_count": len(documents),
+        "sha256": sha256,
+    }
+    if manifest_path.exists():
+        manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+    else:
+        manifest_path.parent.mkdir(parents=True, exist_ok=True)
+        manifest_path.write_text(
+            json.dumps(default_manifest, ensure_ascii=False, indent=2),
+            encoding="utf-8",
+        )
+        manifest = default_manifest
     expected_version = str(dataset.get("version", "")).strip()
     manifest_version = str(manifest.get("dataset_version") or manifest.get("version") or "").strip()
     if expected_version and manifest_version and expected_version != manifest_version:
