@@ -1,0 +1,46 @@
+# Source descriptor for scripts/run_smoke.py, not a full-dataset experiment.
+# Generated subset configs and all outputs live under ignored smoke_checks/.
+schema_version: "1.1"
+experiment_id: smoke_mvp400_c2_source
+experiment_name: MVP400 C2 smoke source
+base_experiment_id: null
+dataset:
+  version: ontong_youth_mvp_400_documents_v1
+  preprocessing_version: ontong_youth_document_v1
+  document_path: data/processed/chunking2/01.document/documents.jsonl
+  manifest_path: data/processed/chunking2/04.manifests/document_manifest.json
+chunking:
+  version: c2_section_800_v1
+  strategy: section
+  size: 800
+  overlap: 120
+  unit: characters
+  target_field: retrieval_text
+  chunk_path: data/processed/chunking2/05.chunks/c2_section_800/c2_section_800_chunks.jsonl
+  manifest_path: data/processed/chunking2/05.chunks/c2_section_800/c2_section_800_manifest.json
+evaluation:
+  version: ontong_youth_eval_questions_v2_final_47
+  questions_path: data/processed/chunking2/02.eval_question_qrels/eval_questions.jsonl
+  document_qrels_path: data/processed/chunking2/02.eval_question_qrels/qrels.jsonl
+  chunk_qrels_path: data/processed/chunking2/05.chunks/c2_section_800/qrels_chunk.jsonl
+  ks: [1, 3, 5]
+embedding:
+  model: nlpai-lab/KURE-v1
+  revision: 8b418a58414668e75532ed045c22d9ca018ae2b2
+  dimension: 1024
+  normalize: true
+  batch_size: 4
+  device: auto
+index:
+  version: smoke_source_unused
+  db_path: smoke_checks/source_unused/index
+  collection_name: smoke_source_unused
+  distance_metric: cosine
+  db_batch_size: 256
+retrieval:
+  evaluation_max_k: 5
+  context_top_k: 3
+execution:
+  retrieval_error_policy: fail
+output:
+  root: smoke_checks/source_unused/results

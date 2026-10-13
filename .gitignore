@@ -231,3 +231,7 @@ data/indexes/**/header.bin
 data/indexes/**/data_level*.bin
 data/indexes/**/length.bin
 data/indexes/**/link_lists.bin
+
+# Local smoke-test inputs, configs, indexes, logs, and results.
+/smoke_checks/
+/.venv-smoke/

@@ -1,2 +1,10 @@
-PyYAML>=6.0,<7.0
-jsonschema>=4.21,<5.0
+# Team-ready compatibility ranges. After one teammate verifies the environment,
+# run scripts/capture_lock.ps1 (or pip freeze) and share requirements-lock.txt.
+PyYAML>=6.0,<7
+jsonschema>=4.20,<5
+numpy>=1.26,<3
+chromadb>=1.0,<2
+sentence-transformers>=5.0,<7
+torch>=2.6,<3
+tqdm>=4.66,<5
+pytest>=8,<10

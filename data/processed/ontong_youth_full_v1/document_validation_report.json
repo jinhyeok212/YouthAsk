@@ -1,0 +1,27 @@
+{
+  "document_count": 2728,
+  "duplicate_document_id_count": 0,
+  "duplicate_document_ids": [],
+  "blank_document_id_count": 0,
+  "blank_title_count": 0,
+  "blank_retrieval_text_count": 0,
+  "missing_required_field_count": 0,
+  "missing_required_field_examples": [],
+  "retrieval_text_min_length": 123,
+  "retrieval_text_avg_length": 615.607,
+  "retrieval_text_median_length": 485.0,
+  "retrieval_text_p95_length": 1395,
+  "retrieval_text_max_length": 3717,
+  "primary_category_counts": {
+    "일자리": 1076,
+    "복지문화": 658,
+    "참여권리": 388,
+    "교육": 323,
+    "주거": 282,
+    "UNKNOWN": 1
+  },
+  "normalization_status_counts": {
+    "OK": 2727,
+    "CHECK": 1
+  }
+}

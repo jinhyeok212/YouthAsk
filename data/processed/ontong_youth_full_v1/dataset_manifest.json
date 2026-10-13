@@ -1,0 +1,53 @@
+{
+  "dataset_name": "Ontong Youth Full RAG Documents",
+  "dataset_version": "ontong_youth_full_v1",
+  "preprocessing_version": "prep_v1",
+  "schema_name": "ontong_youth_rag_document_v1",
+  "source": "ontong_youth",
+  "document_path": "data/processed/ontong_youth_full_v1/documents.jsonl",
+  "created_at": "2026-09-30T11:36:40.610239+00:00",
+  "document_count": 2728,
+  "sha256": "8688055b4553c79e9390e31831b5fefbef00925f24fb20af983a7ca552914a48",
+  "quality": {
+    "document_count": 2728,
+    "duplicate_document_id_count": 0,
+    "duplicate_document_ids": [],
+    "duplicate_document_id_examples": [],
+    "blank_document_id_count": 0,
+    "blank_document_id_examples": [],
+    "blank_title_count": 0,
+    "blank_title_examples": [],
+    "blank_retrieval_text_count": 0,
+    "blank_retrieval_text_examples": [],
+    "blank_category_count": 0,
+    "blank_category_examples": [],
+    "missing_required_field_count": 0,
+    "missing_required_field_examples": [],
+    "retrieval_text_min_length": 123,
+    "retrieval_text_avg_length": 615.607,
+    "retrieval_text_median_length": 485.0,
+    "retrieval_text_p95_length": 1395,
+    "retrieval_text_max_length": 3717,
+    "primary_category_counts": {
+      "일자리": 1076,
+      "복지문화": 658,
+      "참여권리": 388,
+      "교육": 323,
+      "주거": 282,
+      "UNKNOWN": 1
+    },
+    "normalization_status_counts": {
+      "OK": 2727,
+      "CHECK": 1
+    }
+  },
+  "output_files": {
+    "documents_jsonl": "data/processed/ontong_youth_full_v1/documents.jsonl",
+    "dataset_manifest_json": "data/processed/ontong_youth_full_v1/dataset_manifest.json",
+    "data_quality_report_csv": "data/processed/ontong_youth_full_v1/data_quality_report.csv"
+  },
+  "file_hashes_sha256": {
+    "documents_jsonl": "8688055b4553c79e9390e31831b5fefbef00925f24fb20af983a7ca552914a48",
+    "data_quality_report_csv": "c9cad21be97aabd57b0b9213da88c2d68fbcfe870a95f2ff6f02d31856db1674"
+  }
+}
