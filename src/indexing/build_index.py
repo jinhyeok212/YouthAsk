@@ -96,11 +96,12 @@ def build_new_index(config: dict, chunk_info: dict) -> Dict[str, Any]:
     # 중간 실패 결과를 정상 Index로 오인하지 않도록 임시 이름 사용.
     temp_name = f"{final_name}__building__{uuid4().hex[:8]}"
     collection = _create_collection(client, temp_name, metric)
-    adapter = KUREAdapter(config)
-
-    started = time.perf_counter()
-
     try:
+        # Model initialization can fail too (download/device/dependency errors).
+        # Include it in cleanup so an empty temporary collection is not leaked.
+        adapter = KUREAdapter(config)
+        started = time.perf_counter()
+
         for batch_rows in batched(rows, db_batch_size):
             texts = [str(row[CHUNK_TEXT_FIELD]) for row in batch_rows]
             vectors = adapter.encode_documents(texts)

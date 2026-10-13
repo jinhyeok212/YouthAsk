@@ -116,6 +116,8 @@ runner에는 `evaluate_experiment` 단계와 그 반환값을 검증하는 연�
 
 ## 🧪 Experiment Runner
 
+소량 데이터로 실제 실행을 재현하려면 [Smoke Test 실행 안내](docs/smoke_test_guide.md)를 참고하세요. `python scripts/run_smoke.py`는 기존 검수 자료에서 정답 연결을 보존한 표본을 준비하고, 새 실험 ID로 인덱싱·검색·평가·결과 저장·결과 검증까지 수행합니다. 생성 자료는 Git에서 제외되는 `smoke_checks/`에 저장합니다.
+
 실험 설정은 YAML로 전달합니다. 다음 명령은 저장소 루트에서 사용하는 CLI 예시이며, 실행 성공을 확인한 기록은 아닙니다.
 
 ### 설정 검증
