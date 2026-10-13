@@ -1,0 +1,59 @@
+experiment_id: exp_full_kure_v4_team
+experiment_name: full-dataset-kure-team-ready-baseline
+schema_version: "1.1"
+base_experiment_id: null
+
+dataset:
+  version: ontong_youth_full_v1
+  preprocessing_version: prep_v1
+  document_path: data/processed/ontong_youth_full_v1/documents.jsonl
+  manifest_path: data/processed/ontong_youth_full_v1/dataset_manifest.json
+
+chunking:
+  version: c2_section_800_v1
+  strategy: section
+  size: 800
+  overlap: 120
+  unit: characters
+  target_field: retrieval_text
+  chunk_path: data/processed/ontong_youth_full_v1/chunks.jsonl
+  manifest_path: data/processed/ontong_youth_full_v1/chunk_manifest.json
+
+evaluation:
+  version: eval_full_v1
+  questions_path: data/evaluation/eval_full_v1/eval_questions.jsonl
+  document_qrels_path: data/evaluation/eval_full_v1/qrels.jsonl
+  chunk_qrels_path: data/evaluation/eval_full_v1/qrels_chunk.jsonl
+  ks: [1, 3, 5]
+
+embedding:
+  model: nlpai-lab/KURE-v1
+  # This commit is the exact revision resolved in the successful baseline run log.
+  revision: 8b418a58414668e75532ed045c22d9ca018ae2b2
+  dimension: 1024
+  normalize: true
+  batch_size: 32
+  device: auto
+
+index:
+  # v4 uses a new index namespace because the reproducibility signature is stricter
+  # (index version + embedding revision are now part of the signature).
+  version: index_full_kure_v4
+  db_path: indexes/chroma/index_full_kure_v4
+  collection_name: ontong_youth_full_kure_v4
+  distance_metric: cosine
+  db_batch_size: 256
+
+retrieval:
+  evaluation_max_k: 5
+  # Reserved for the future Generator/Context stage. It does not change retrieval
+  # metrics in the current offline retrieval-only runner.
+  context_top_k: 3
+
+execution:
+  # partial: keep artifacts and return PARTIAL_SUCCESS if any query retrieval fails.
+  # fail: save artifacts first, then make the command fail.
+  retrieval_error_policy: partial
+
+output:
+  root: experiments

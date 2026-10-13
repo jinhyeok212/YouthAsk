@@ -72,7 +72,6 @@ Metadata Filter 예:
         --where-json '{"section":"application"}'
 """
 
-from __future__ import annotations
 
 import argparse
 import hashlib
@@ -123,13 +122,28 @@ DEFAULT_EMBED_BATCH_SIZE = 32
 # ============================================================
 
 def choose_device(requested: str) -> str:
-    """
-    --device auto/cuda/cpu/mps 처리.
-    """
+    """Resolve auto/cuda/cpu/mps and fail clearly for unavailable explicit devices."""
     requested = requested.lower()
 
+    if requested == "cuda":
+        if not torch.cuda.is_available():
+            raise RuntimeError("embedding.device=cuda 이지만 CUDA를 사용할 수 없습니다.")
+        return "cuda"
+
+    if requested == "mps":
+        mps_available = (
+            hasattr(torch.backends, "mps")
+            and torch.backends.mps.is_available()
+        )
+        if not mps_available:
+            raise RuntimeError("embedding.device=mps 이지만 MPS를 사용할 수 없습니다.")
+        return "mps"
+
+    if requested == "cpu":
+        return "cpu"
+
     if requested != "auto":
-        return requested
+        raise ValueError(f"지원하지 않는 device 값입니다: {requested}")
 
     if torch.cuda.is_available():
         return "cuda"
@@ -366,26 +380,37 @@ class KUREEmbedder:
         model_name: str,
         device: str,
         batch_size: int,
+        revision: Optional[str] = None,
     ) -> None:
         self.model_name = model_name
         self.device = device
         self.batch_size = batch_size
+        self.revision = revision
 
         print("\n" + "=" * 70)
         print("[KURE-v1 모델 로딩]")
         print(f"model       : {self.model_name}")
+        print(f"revision    : {self.revision or 'default'}")
         print(f"device      : {self.device}")
         print(f"batch_size  : {self.batch_size}")
         print("=" * 70)
 
         started = time.perf_counter()
 
+        model_kwargs = {"device": self.device}
+        if self.revision:
+            model_kwargs["revision"] = self.revision
+
         self.model = SentenceTransformer(
             self.model_name,
-            device=self.device,
+            **model_kwargs,
         )
 
-        self.embedding_dim = self.model.get_sentence_embedding_dimension()
+        # sentence-transformers renamed this API in newer releases.
+        if hasattr(self.model, "get_embedding_dimension"):
+            self.embedding_dim = self.model.get_embedding_dimension()
+        else:
+            self.embedding_dim = self.model.get_sentence_embedding_dimension()
         self.max_seq_length = getattr(self.model, "max_seq_length", None)
 
         print(f"embedding_dim  : {self.embedding_dim}")

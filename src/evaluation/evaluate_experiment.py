@@ -1,107 +1,114 @@
-"""Runner adapter for deterministic document/chunk retrieval evaluation."""
+from __future__ import annotations
 
-from pathlib import Path
 import math
-import json
-from jsonschema import Draft202012Validator
 
-from src.evaluation.evaluator import (
-    _read_jsonl, _require_non_empty_string, evaluate_document_queries,
-    evaluate_chunk_queries, summarize_document_metrics, summarize_chunk_metrics,
-    validate_query_alignment,
-)
-from src.evaluation.failure_analyzer import analyze_failures
-from src.experiments.contracts import validate_retrieval_results
-
-PROJECT_ROOT = Path(__file__).resolve().parents[2]
+from src.evaluation.failure_analyzer import classify_failure
+from src.evaluation.qrels import load_chunk_qrels, load_document_qrels
 
 
-def input_path(value):
-    path = Path(value)
-    return path if path.is_absolute() else PROJECT_ROOT / path
+def _first_relevant_rank(retrieved: list[str], relevant: set[str]) -> int | None:
+    for rank, item_id in enumerate(retrieved, start=1):
+        if item_id in relevant:
+            return rank
+    return None
 
 
-def load_qrels(path, unit):
-    """Accept repository row qrels and the initial handoff's ID-list format."""
-    grouped = {}
-    for row in _read_jsonl(input_path(path)):
-        query_id = _require_non_empty_string(row, "query_id", str(path))
-        plural = f"ground_truth_{unit}_ids"
-        ids = row.get(plural) if plural in row else [row.get(f"{unit}_id")]
-        if not isinstance(ids, list) or not ids or any(
-            not isinstance(item, str) or not item.strip() for item in ids
-        ):
-            raise ValueError(f"{query_id}: invalid {unit} qrels")
-        relevance = row.get("relevance", 1)
-        if isinstance(relevance, bool) or not isinstance(relevance, (int, float)) or not math.isfinite(relevance):
-            raise ValueError(f"{query_id}: invalid relevance")
-        if relevance > 0:
-            grouped.setdefault(query_id, set()).update(ids)
-    return grouped
+def _hit(first_rank: int | None, k: int) -> int:
+    return int(first_rank is not None and first_rank <= k)
+
+
+def _mrr(first_rank: int | None) -> float:
+    return 0.0 if first_rank is None else 1.0 / first_rank
+
+
+def _percentile(values: list[float], p: float) -> float:
+    if not values:
+        return 0.0
+    xs = sorted(values)
+    idx = max(0, min(len(xs) - 1, math.ceil(p * len(xs)) - 1))
+    return float(xs[idx])
 
 
 def evaluate_experiment(config: dict, retrieval_results: list[dict]) -> dict:
-    """Evaluate original chunk ranks, without deduplicating document ranks.
+    doc_qrels = load_document_qrels(config["evaluation"]["document_qrels_path"])
+    chunk_qrels = load_chunk_qrels(config["evaluation"]["chunk_qrels_path"])
+    ks = sorted(int(k) for k in config.get("evaluation", {}).get("ks", [1, 3, 5]))
+    failure_k = max(ks)
 
-    MRR is truncated at evaluation_max_k. Runtime errors contribute zero and
-    remain explicitly marked; the writer prevents a successful Runner exit.
-    """
-    rows = validate_retrieval_results(retrieval_results)
-    max_k = config["retrieval"]["evaluation_max_k"]
-    if isinstance(max_k, bool) or not isinstance(max_k, int) or max_k < 5:
-        raise ValueError("Hit@5 requires evaluation_max_k >= 5")
-    evaluation = config["evaluation"]
-    questions = _read_jsonl(input_path(evaluation["questions_path"]))
-    question_ids = []
-    for question in questions:
-        query_id = _require_non_empty_string(question, "query_id", "questions")
-        _require_non_empty_string(question, "query", query_id)
-        if query_id in question_ids:
-            raise ValueError(f"duplicate question query_id: {query_id}")
-        question_ids.append(query_id)
-    validate_query_alignment(rows, dict.fromkeys(question_ids, set()))
-    document_qrels = load_qrels(evaluation["document_qrels_path"], "document")
-    chunk_qrels = load_qrels(evaluation["chunk_qrels_path"], "chunk")
-    validate_query_alignment(rows, document_qrels)
-    validate_query_alignment(rows, chunk_qrels)
-    by_id = {row["query_id"]: row for row in rows}
-    rows = [by_id[query_id] for query_id in question_ids]
-    for row in rows:
-        if len(row["results"]) > max_k:
-            raise ValueError(f"{row['query_id']}: results exceed evaluation_max_k")
-        error = row.get("error")
-        if error is not None and (not isinstance(error, str) or not error.strip()):
-            raise ValueError(f"{row['query_id']}: invalid error field")
-        if error and row["results"]:
-            raise ValueError(f"{row['query_id']}: error must have empty results")
-    documents = evaluate_document_queries(rows, document_qrels)
-    chunks = evaluate_chunk_queries(rows, chunk_qrels)
-    summary = {}
-    for prefix, values in (("document", summarize_document_metrics(documents)),
-                           ("chunk", summarize_chunk_metrics(chunks))):
-        summary.update({key: value for key, value in values.items() if key.startswith(prefix + "_")})
-    latencies = sorted(float(row["retrieval_latency_ms"]) for row in rows)
-    # Nearest-rank percentile, valid for even one query.
-    summary.update(
-        question_count=len(rows), evaluated_question_count=len(rows),
-        evaluation_max_k=max_k,
-        average_retrieval_latency_ms=sum(latencies) / len(latencies),
-        p95_retrieval_latency_ms=latencies[math.ceil(.95 * len(latencies)) - 1],
-        runtime_error_count=sum(bool(row.get("error")) for row in rows),
-        document_failure_count=sum(item["hit_at_5"] == 0 for item in documents),
-        chunk_failure_count=sum(item["hit_at_5"] == 0 for item in chunks),
+    query_ids = [r["query_id"] for r in retrieval_results]
+    if len(query_ids) != len(set(query_ids)):
+        raise ValueError("검색 결과에 중복 query_id가 있습니다.")
+
+    by_query: list[dict] = []
+    for row in retrieval_results:
+        qid = row["query_id"]
+        if qid not in doc_qrels:
+            raise ValueError(f"문서 qrels 누락: query_id={qid}")
+        if qid not in chunk_qrels:
+            raise ValueError(f"Chunk qrels 누락: query_id={qid}")
+
+        runtime_error = row.get("error")
+        doc_ids = [str(r.get("document_id", "")) for r in row["results"]]
+        chunk_ids = [str(r.get("chunk_id", "")) for r in row["results"]]
+        d_rank = _first_relevant_rank(doc_ids, doc_qrels[qid])
+        c_rank = _first_relevant_rank(chunk_ids, chunk_qrels[qid])
+
+        item = {
+            "query_id": qid,
+            "document_mrr": _mrr(d_rank),
+            "document_first_relevant_rank": d_rank,
+            "chunk_mrr": _mrr(c_rank),
+            "chunk_first_relevant_rank": c_rank,
+            "retrieval_latency_ms": float(row["retrieval_latency_ms"]),
+            "runtime_error": runtime_error,
+        }
+        for k in ks:
+            item[f"document_hit_at_{k}"] = _hit(d_rank, k)
+            item[f"chunk_hit_at_{k}"] = _hit(c_rank, k)
+
+        item["failure_type"] = classify_failure(item, failure_k=failure_k)
+        by_query.append(item)
+
+    if set(query_ids) != set(doc_qrels):
+        missing = sorted(set(doc_qrels) - set(query_ids))
+        extra = sorted(set(query_ids) - set(doc_qrels))
+        raise ValueError(
+            f"평가 질문/검색 결과 불일치: missing={missing[:10]}, extra={extra[:10]}"
+        )
+
+    n = len(by_query)
+    if n == 0:
+        raise ValueError("평가 결과가 0건입니다.")
+
+    def avg(field: str) -> float:
+        return sum(float(r[field]) for r in by_query) / n
+
+    latencies = [r["retrieval_latency_ms"] for r in by_query if not r["runtime_error"]]
+    failures = [r for r in by_query if r["failure_type"]]
+    runtime_failures = [r for r in by_query if r["runtime_error"]]
+
+    summary: dict[str, float | int] = {}
+    for k in ks:
+        summary[f"document_hit_at_{k}"] = avg(f"document_hit_at_{k}")
+    summary["document_mrr"] = avg("document_mrr")
+    for k in ks:
+        summary[f"chunk_hit_at_{k}"] = avg(f"chunk_hit_at_{k}")
+    summary["chunk_mrr"] = avg("chunk_mrr")
+    summary["average_retrieval_latency_ms"] = (
+        sum(latencies) / len(latencies) if latencies else 0.0
     )
-    summary["status"] = "FAILED" if summary["runtime_error_count"] else "COMPLETED"
-    metrics = [dict(query_id=row["query_id"], query=row["query"],
-                    document=doc, chunk=chunk, error=row.get("error"),
-                    retrieval_latency_ms=row["retrieval_latency_ms"])
-               for row, doc, chunk in zip(rows, documents, chunks)]
-    failures = analyze_failures(metrics)
-    summary["search_failure_question_count"] = sum(
-        not item.get("error") and not item["chunk"]["hit_at_5"] for item in metrics
-    )
-    result = {"metrics_summary": summary, "metrics_by_query": metrics,
-              "failure_cases": failures}
-    schema = json.loads((PROJECT_ROOT / "schemas/experiment_result.schema.json").read_text(encoding="utf-8"))
-    Draft202012Validator(schema).validate(result)
-    return result
+    summary["p95_retrieval_latency_ms"] = _percentile(latencies, 0.95)
+    summary["retrieval_failure_count"] = len(runtime_failures)
+    summary["evaluation_query_count"] = n
+    summary["evaluation_ks"] = ks
+
+    for key, value in summary.items():
+        if key.startswith(("document_hit", "chunk_hit")) or key.endswith("_mrr"):
+            if not 0.0 <= float(value) <= 1.0:
+                raise ValueError(f"Metric 범위 오류: {key}={value}")
+
+    return {
+        "metrics_summary": summary,
+        "metrics_by_query": by_query,
+        "failure_cases": failures,
+    }
