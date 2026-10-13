@@ -24,6 +24,57 @@ YAML 청킹 조건
 -> 임베딩/인덱싱 단계로 전달
 ```
 
+## 1.1 이전 구현과 비교한 핵심 변경 요약
+
+```text
+1. 청킹 조건별 생성
+
+이전:
+준비된 청크를 검증하거나 단순 청킹을 수행하는 수준이었다.
+
+변경:
+YAML의 strategy, size, overlap, target_field를 읽어
+해당 조건에 맞는 청크를 생성할 수 있게 했다.
+```
+
+```text
+2. 조건별 결과 분리
+
+이전:
+하나의 chunks.jsonl 경로를 그대로 사용할 수 있어
+조건이 다른 청크가 기존 결과를 덮어쓸 위험이 있었다.
+
+변경:
+fixed_500_ov50_v1, section_800_ov120_v1처럼
+청킹 조건별로 다른 경로에 저장하고 기존 청크를 덮어쓰지 않게 했다.
+```
+
+```text
+3. Manifest signature 검증
+
+이전:
+청크 재사용 여부를 데이터 버전, 전처리 버전, 데이터 해시,
+청킹 조건까지 포함해 엄격하게 판단하지 못했다.
+
+변경:
+데이터 버전, 전처리 버전, 데이터 해시, 청킹 버전,
+strategy, size, overlap, unit, target_field가 모두 같을 때만
+기존 청크를 재사용하도록 했다.
+```
+
+```text
+4. qrels 안전 처리
+
+이전:
+정답 문서에 속한 모든 chunk를 정답 chunk로 처리할 수 있었다.
+
+변경:
+정답 문서의 모든 chunk를 무조건 정답 처리하지 않고,
+근거 span/text가 있는 경우만 qrels_chunk로 확정한다.
+근거가 없으면 qrels_chunk_review_required.jsonl로 분리해
+검수 필요 상태로 남긴다.
+```
+
 ## 2. 이전 구현의 범위
 
 이전 구현은 다음 역할에 가까웠다.
@@ -295,7 +346,181 @@ data/evaluation/eval_full_v1/chunk_qrels/c2_section_800_ov120_v1/qrels_chunk.jso
 
 이렇게 해야 서로 다른 조건의 청크와 평가 정답이 서로 덮어쓰이지 않는다.
 
-## 7. 왜 이제 조건별 실험이 가능해졌는가
+## 7. fixed와 section 청킹 방식
+
+이번 변경에서 청킹 방식은 크게 `fixed`와 `section`으로 나뉜다.
+
+둘 중 하나가 항상 정답이라는 뜻은 아니다. 같은 데이터, 같은 평가 질문, 같은 embedding/search 조건에서 두 방식을 비교한 뒤 더 좋은 결과를 이후 실험의 기준으로 채택하기 위해 둘 다 지원한다.
+
+## 7.1 fixed 청킹
+
+`fixed`는 문서 본문을 단순히 글자 수 기준으로 자르는 방식이다.
+
+예를 들어 다음 설정이면:
+
+```yaml
+chunking:
+  strategy: fixed
+  size: 500
+  overlap: 50
+  target_field: retrieval_text
+```
+
+`retrieval_text`를 500자 단위로 자르고, 앞뒤 청크는 50자씩 겹치게 만든다.
+
+예시:
+
+```text
+chunk_000: 0~500자
+chunk_001: 450~950자
+chunk_002: 900~1400자
+```
+
+장점:
+
+```text
+구현이 단순하다.
+항상 일정한 규칙으로 잘리기 때문에 재현성이 좋다.
+문서 구조가 없어도 모든 문서에 적용할 수 있다.
+청크 길이가 비교적 일정해서 embedding 비용과 검색 조건을 예측하기 쉽다.
+```
+
+단점:
+
+```text
+문장이나 항목 중간에서 끊길 수 있다.
+신청 방법, 지원 내용, 제출 서류 같은 의미 단위가 나뉠 수 있다.
+정책 문서의 구조 정보를 활용하지 못한다.
+```
+
+fixed 방식은 다음과 같은 상황에서 유리할 수 있다.
+
+```text
+문서 구조가 일정하지 않거나 section label이 잘 잡히지 않는 경우
+간단한 baseline이 필요한 경우
+청크 길이를 엄격하게 통제하고 싶은 경우
+```
+
+## 7.2 section 청킹
+
+`section`은 문서를 먼저 의미 있는 구역으로 나누고, 각 구역이 너무 길 때만 다시 자르는 방식이다.
+
+예를 들어 정책 문서에 다음과 같은 구역이 있다고 하자.
+
+```text
+정책명
+정책 요약
+지원 내용
+참여 대상
+신청 방법
+제출 서류
+```
+
+`section` 방식은 이 구역들을 먼저 찾는다. 그리고 각 구역의 본문이 `size`보다 길면 그때만 overlap을 적용해 나눈다.
+
+예:
+
+```text
+policy_001__sec_00_title__chunk_000
+policy_001__sec_01_summary__chunk_000
+policy_001__sec_02_support__chunk_000
+policy_001__sec_03_application_method__chunk_000
+```
+
+중요한 점은 `section`에서의 `size` 의미다.
+
+```text
+fixed의 size:
+최종 chunk text 전체 길이 제한
+
+section의 size:
+section body를 나누는 기준
+```
+
+section 방식에서는 제목 prefix가 붙을 수 있다.
+
+예:
+
+```text
+정책명: 청년 월세 지원
+
+신청 방법: 온라인 신청만 가능합니다.
+```
+
+그래서 section 방식의 최종 chunk text 길이는 `size`보다 조금 길어질 수 있다. 이 차이는 Manifest의 `generator.size_meaning`에 기록된다.
+
+장점:
+
+```text
+정책 문서의 의미 구조를 유지할 수 있다.
+신청 방법, 지원 내용, 제출 서류 같은 질문에 맞는 구역이 검색될 가능성이 높다.
+청크가 의미 단위로 나뉘므로 검색 결과를 사람이 해석하기 쉽다.
+```
+
+단점:
+
+```text
+문서의 section label이 일정하지 않으면 잘 나누기 어렵다.
+fixed보다 구현과 검증이 복잡하다.
+section prefix 때문에 최종 chunk 길이가 일정하지 않을 수 있다.
+```
+
+section 방식은 다음과 같은 상황에서 유리할 수 있다.
+
+```text
+정책 문서가 일정한 항목 구조를 가지고 있는 경우
+질문이 신청 방법, 지원 내용, 자격 조건처럼 특정 구역을 묻는 경우
+검색 결과의 설명 가능성을 높이고 싶은 경우
+```
+
+## 7.3 왜 둘 다 지원하는가
+
+청킹 방식은 검색 성능에 직접 영향을 준다.
+
+너무 단순하게 자르면 의미가 끊길 수 있고, 너무 구조적으로 자르면 문서마다 구조 차이에 영향을 받을 수 있다.
+
+그래서 현재 목표는 하나를 미리 정답으로 고르는 것이 아니라, 같은 조건에서 비교하는 것이다.
+
+비교할 때 고정하는 조건:
+
+```text
+같은 documents.jsonl
+같은 eval_questions.jsonl
+같은 document qrels
+같은 embedding model
+같은 retrieval top-k
+```
+
+바꾸는 조건:
+
+```text
+chunking.strategy
+chunking.size
+chunking.overlap
+```
+
+비교 지표:
+
+```text
+document Hit@1/3/5
+chunk Hit@1/3/5
+document MRR
+chunk MRR
+검색 지연시간
+실패 질문 유형
+```
+
+결론적으로:
+
+```text
+fixed와 section을 둘 다 실행해보고,
+평가 지표와 실패 사례를 비교한 뒤,
+더 안정적인 방식을 이후 실험의 기준으로 채택한다.
+```
+
+다만 chunk qrels가 준비되지 않은 조건은 chunk-level 평가를 바로 할 수 없다. 이 경우 document-level 평가는 가능하지만, chunk-level 평가는 `qrels_chunk_review_required.jsonl` 검수 후 진행해야 한다.
+
+## 8. 왜 이제 조건별 실험이 가능해졌는가
 
 이번 변경으로 가능해진 것:
 
@@ -324,7 +549,7 @@ Manifest signature로 재사용 가능 여부 판단
 
 가 되었다.
 
-## 8. 테스트 변경
+## 9. 테스트 변경
 
 `tests/test_chunk_validation.py`는 다음을 검증한다.
 
@@ -350,7 +575,7 @@ Ran 5 tests
 OK
 ```
 
-## 9. 실행 명령
+## 10. 실행 명령
 
 문법 검사:
 
@@ -372,7 +597,7 @@ py -m src.experiments.runner --config configs/experiments/exp_full_kure_v1.yaml
 
 단, 실제 인덱싱·검색·평가까지 완료하려면 평가/러너/인덱스 담당 모듈과 qrels 정책이 함께 맞아야 한다.
 
-## 10. 추가 합의가 필요한 부분
+## 11. 추가 합의가 필요한 부분
 
 청킹 담당 코드에서 검수 필요 상태를 표시할 수 있게 되었지만, Runner와 Evaluation 쪽에서 이 상태를 어떻게 처리할지는 팀 합의가 필요하다.
 
@@ -388,7 +613,7 @@ qrels_chunk_review_required.jsonl을 누가 검수할지
 
 현재 청킹 모듈은 qrels를 임의 생성하지 않고 상태를 명확히 분리하는 쪽으로 구현했다.
 
-## 11. 최종 요약
+## 12. 최종 요약
 
 이번 변경의 핵심은 다음이다.
 
