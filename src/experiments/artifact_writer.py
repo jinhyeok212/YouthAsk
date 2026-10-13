@@ -1,90 +1,120 @@
-"""Save Runner artifacts without overwriting existing experiment results."""
+from __future__ import annotations
 
 import csv
-import hashlib
-import io
 import json
+import shutil
 import subprocess
+from pathlib import Path
+from uuid import uuid4
 
-from src.evaluation.evaluate_experiment import input_path, PROJECT_ROOT
-from src.experiments.contracts import validate_evaluation_result
-
-
-def _json(value):
-    return json.dumps(value, ensure_ascii=False, indent=2, allow_nan=False) + "\n"
+from src.common.io import utc_now_iso, write_json, write_jsonl
+from src.experiments.environment import collect_environment_info
 
 
-def _jsonl(rows):
-    return "".join(json.dumps(row, ensure_ascii=False, allow_nan=False) + "\n" for row in rows)
+def _git_commit() -> str | None:
+    try:
+        return subprocess.check_output(
+            ["git", "rev-parse", "HEAD"],
+            text=True,
+            stderr=subprocess.DEVNULL,
+        ).strip()
+    except Exception:
+        return None
+
+
+def _config_for_artifact(config: dict) -> dict:
+    return {k: v for k, v in config.items() if k != "_runtime"}
 
 
 def write_experiment_artifacts(config: dict, run_context: dict) -> dict:
-    evaluation = validate_evaluation_result(run_context["evaluation_result"])
-    experiment_id = config["experiment_id"]
-    root = input_path(config["runtime"]["output_root"]).resolve()
-    output = (root / experiment_id).resolve()
-    if output.parent != root:
-        raise ValueError("experiment_id must be a single directory name")
-    rows = run_context["retrieval_results"]
-    if len(rows) != len(evaluation["metrics_by_query"]):
-        raise ValueError("retrieval/evaluation question counts differ")
-    failed = any(row.get("error") for row in rows)
-    metadata = dict(run_context["run_metadata"])
-    metadata["status"] = "FAILED" if failed else metadata["status"]
-    hashes = {}
-    for field in ("questions_path", "document_qrels_path", "chunk_qrels_path"):
-        path = input_path(config["evaluation"][field])
-        hashes[field] = hashlib.sha256(path.read_bytes()).hexdigest()
-    revision = subprocess.run(["git", "rev-parse", "HEAD"], cwd=PROJECT_ROOT,
-                              capture_output=True, text=True, check=False)
-    manifest = {"config": config, "run_metadata": metadata,
-                "dataset_info": run_context["dataset_info"],
-                "chunk_info": run_context["chunk_info"],
-                "index_info": run_context["index_info"],
-                "evaluation_sha256": hashes,
-                "code_revision": revision.stdout.strip() if revision.returncode == 0 else None}
-    buffer = io.StringIO(newline="")
-    columns = ["query_id", "query", "failure_type", "error",
-               "document_first_relevant_rank", "chunk_first_relevant_rank",
-               "gold_document_ids", "gold_chunk_ids"]
-    writer = csv.DictWriter(buffer, fieldnames=columns)
-    writer.writeheader()
-    for case in evaluation["failure_cases"]:
-        writer.writerow({key: json.dumps(value, ensure_ascii=False) if isinstance(value, list)
-                         else value for key, value in case.items()})
-    traces = [dict(row, experiment_id=experiment_id,
-                   index_version=run_context["index_info"]["index_version"]) for row in rows]
-    payloads = {
-        "experiment_manifest.json": _json(manifest),
-        "metrics_summary.json": _json(evaluation["metrics_summary"]),
-        "metrics_by_query.jsonl": _jsonl(evaluation["metrics_by_query"]),
-        "retrieval_results.jsonl": _jsonl(rows),
-        "failure_cases.csv": buffer.getvalue(),
-    }
-    # The index owner creates its manifest; preserve it or copy its exact content.
-    index_source = input_path(run_context["index_info"]["manifest_path"])
-    index_text = index_source.read_text(encoding="utf-8-sig")
-    json.loads(index_text)
-    if index_source.resolve() != (output / "index_manifest.json").resolve():
-        payloads["index_manifest.json"] = index_text
-    if not (output / "traces.jsonl").exists():
-        payloads["traces.jsonl"] = _jsonl(traces)
-    else:
-        # Trace belongs to retrieval when it already exists. Check coverage.
-        from src.evaluation.evaluator import _read_jsonl
-        existing = _read_jsonl(output / "traces.jsonl")
-        ids = [item["query_id"] for item in existing]
-        if len(ids) != len(set(ids)) or set(ids) != {row["query_id"] for row in rows}:
-            raise ValueError("existing traces do not cover retrieval query IDs")
-    for name in payloads:
-        if (output / name).exists():
-            raise FileExistsError(f"Refusing to overwrite: {output / name}")
-    output.mkdir(parents=True, exist_ok=True)
-    for name, content in payloads.items():
-        with (output / name).open("x", encoding="utf-8", newline="") as stream:
-            stream.write(content)
-    # Runner owns run.log. Raising here retains diagnostics but prevents COMPLETED.
-    if failed:
-        ids = [row["query_id"] for row in rows if row.get("error")]
-        raise RuntimeError(f"Retrieval runtime errors; diagnostics saved: {ids}")
-    return {"output_dir": str(output), "written_files": [str(output / name) for name in payloads]}
+    """Write artifacts into a staging directory and publish atomically."""
+    output_root = Path(config.get("output", {}).get("root", "experiments"))
+    out = output_root / config["experiment_id"]
+
+    if out.exists():
+        raise FileExistsError(
+            "기존 실험 결과를 덮어쓰지 않습니다. "
+            f"experiment_id를 새 버전으로 변경하세요: {out}"
+        )
+
+    staging_root = output_root / ".staging"
+    staging_root.mkdir(parents=True, exist_ok=True)
+    stage = staging_root / f"{config['experiment_id']}__{uuid4().hex[:8]}"
+    stage.mkdir(parents=True, exist_ok=False)
+
+    try:
+        retrieval = run_context["retrieval_results"]
+        evaluation = run_context["evaluation"]
+        dataset_info = run_context["dataset_info"]
+        chunk_info = run_context["chunk_info"]
+        index_info = run_context["index_info"]
+        evaluation_info = run_context.get("evaluation_info")
+        status = run_context.get("status", "SUCCESS")
+        log_path = run_context.get("run_log_path")
+
+        write_jsonl(stage / "retrieval_results.jsonl", retrieval)
+        write_jsonl(stage / "traces.jsonl", retrieval)
+        write_json(stage / "metrics_summary.json", evaluation["metrics_summary"])
+        write_jsonl(stage / "metrics_by_query.jsonl", evaluation["metrics_by_query"])
+        write_json(stage / "environment.json", collect_environment_info())
+        write_json(stage / "resolved_config.json", _config_for_artifact(config))
+
+        failure_path = stage / "failure_cases.csv"
+        with failure_path.open("w", encoding="utf-8-sig", newline="") as f:
+            fields = [
+                "query_id",
+                "failure_type",
+                "document_first_relevant_rank",
+                "chunk_first_relevant_rank",
+                "retrieval_latency_ms",
+                "runtime_error",
+            ]
+            writer = csv.DictWriter(f, fieldnames=fields)
+            writer.writeheader()
+            for row in evaluation["failure_cases"]:
+                writer.writerow({k: row.get(k) for k in fields})
+
+        experiment_manifest = {
+            "experiment_id": config["experiment_id"],
+            "experiment_name": config.get("experiment_name"),
+            "base_experiment_id": config.get("base_experiment_id"),
+            "status": status,
+            "schema_version": config["schema_version"],
+            "dataset": dataset_info,
+            "chunking": chunk_info,
+            "index": index_info,
+            "embedding": config["embedding"],
+            "retrieval": config["retrieval"],
+            "evaluation": {
+                "version": config["evaluation"]["version"],
+                "ks": config["evaluation"].get("ks", [1, 3, 5]),
+                "validation": evaluation_info,
+            },
+            "git_commit": _git_commit(),
+            "created_at_utc": utc_now_iso(),
+        }
+        write_json(stage / "experiment_manifest.json", experiment_manifest)
+
+        shutil.copy2(index_info["manifest_path"], stage / "index_manifest.json")
+
+        source_config = config.get("_runtime", {}).get("config_path")
+        if source_config and Path(source_config).exists():
+            shutil.copy2(source_config, stage / "experiment_config.yaml")
+
+        if log_path and Path(log_path).exists():
+            shutil.copy2(log_path, stage / "run.log")
+
+        # Same filesystem rename: consumers never observe a half-written final folder.
+        stage.rename(out)
+
+        return {
+            "output_dir": str(out),
+            "experiment_manifest_path": str(out / "experiment_manifest.json"),
+            "metrics_summary_path": str(out / "metrics_summary.json"),
+            "failure_cases_path": str(out / "failure_cases.csv"),
+            "environment_path": str(out / "environment.json"),
+        }
+
+    except Exception:
+        shutil.rmtree(stage, ignore_errors=True)
+        raise

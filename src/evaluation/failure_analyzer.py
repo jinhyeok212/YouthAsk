@@ -1,23 +1,25 @@
-"""Classify observable retrieval outcomes; do not guess semantic causes."""
+from __future__ import annotations
 
 
-def analyze_failures(metrics_by_query: list[dict]) -> list[dict]:
-    cases = []
-    for row in metrics_by_query:
-        if row.get("error"):
-            kind = "runtime_error"
-        elif not row["document"]["hit_at_5"]:
-            kind = "document_not_in_top_5"
-        elif not row["chunk"]["hit_at_5"]:
-            kind = "chunk_not_in_top_5"
-        else:
-            continue
-        cases.append({
-            "query_id": row["query_id"], "query": row["query"],
-            "failure_type": kind, "error": row.get("error"),
-            "document_first_relevant_rank": row["document"]["first_relevant_rank"],
-            "chunk_first_relevant_rank": row["chunk"]["first_relevant_rank"],
-            "gold_document_ids": row["document"]["gold_document_ids"],
-            "gold_chunk_ids": row["chunk"]["gold_chunk_ids"],
-        })
-    return cases
+def classify_failure(
+    query_metric: dict,
+    *,
+    failure_k: int,
+    low_rank_threshold: int = 3,
+) -> str | None:
+    """Classify only observable retrieval failures, not semantic causes."""
+    if query_metric.get("runtime_error"):
+        return "RUNTIME_ERROR"
+
+    doc_key = f"document_hit_at_{failure_k}"
+    chunk_key = f"chunk_hit_at_{failure_k}"
+
+    if query_metric.get(doc_key) == 0:
+        return f"DOCUMENT_MISS_TOP{failure_k}"
+    if query_metric.get(chunk_key) == 0:
+        return f"DOCUMENT_HIT_BUT_CHUNK_MISS_TOP{failure_k}"
+
+    chunk_rank = query_metric.get("chunk_first_relevant_rank")
+    if chunk_rank and chunk_rank > low_rank_threshold:
+        return "LOW_RANK_RELEVANT_CHUNK"
+    return None

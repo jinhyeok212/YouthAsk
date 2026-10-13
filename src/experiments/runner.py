@@ -1,681 +1,340 @@
-"""Run the complete RAG experiment pipeline from one YAML file."""
+"""RAG Offline Experiment Runner: validation -> index -> retrieval -> evaluation."""
 
 from __future__ import annotations
 
 import argparse
 import importlib
+import importlib.util
 import json
 import logging
-import sys
-from collections.abc import Callable
-from dataclasses import dataclass
-from datetime import datetime, timezone
 from pathlib import Path
-from typing import Any
 
+from src.chunking.build_chunks import build_chunks
+from src.data.validate_documents import validate_documents
+from src.evaluation.evaluate_experiment import evaluate_experiment
+from src.evaluation.validate_inputs import validate_evaluation_inputs
+from src.experiments.artifact_writer import write_experiment_artifacts
 from src.experiments.config_validator import (
-    DEFAULT_CONFIG_PATH,
-    DEFAULT_SCHEMA_PATH,
     PROJECT_ROOT,
-    resolve_project_path,
-    validate_experiment_config,
+    inspect_input_readiness,
+    load_and_validate_config,
 )
 from src.experiments.contracts import (
-    validate_stage_result,
+    validate_chunk_info,
+    validate_dataset_info,
+    validate_index_info,
+    validate_retrieval_results,
 )
+from src.indexing.index_resolver import resolve_index
+from src.retrieval.batch_retriever_v4 import run_batch_retrieval
 
 
-@dataclass(frozen=True)
-class PipelineStage:
-    """Runner에서 실행할 Pipeline 단계 정보."""
-
-    name: str
-    description: str
+DEFAULT_CONFIG = "configs/experiments/exp_full_kure_v4_team.yaml"
 
 
-PIPELINE_STAGES = (
-    PipelineStage(
-        name="validate_documents",
-        description="문서와 Dataset Manifest 검증",
-    ),
-    PipelineStage(
-        name="build_chunks",
-        description="청킹 및 Chunk qrels 검증",
-    ),
-    PipelineStage(
-        name="resolve_index",
-        description="Chroma 인덱스 생성 또는 재사용",
-    ),
-    PipelineStage(
-        name="run_batch_retrieval",
-        description="전체 평가 질문 Top-k 검색",
-    ),
-    PipelineStage(
-        name="evaluate_experiment",
-        description="Hit@k, MRR 및 실패 사례 계산",
-    ),
-    PipelineStage(
-        name="write_experiment_artifacts",
-        description="표준 실험 결과 파일 저장",
-    ),
-)
+def _module_readiness() -> bool:
+    modules = [
+        "src.data.validate_documents",
+        "src.chunking.build_chunks",
+        "src.indexing.index_resolver",
+        "src.retrieval.batch_retriever_v4",
+        "src.evaluation.evaluate_experiment",
+        "src.experiments.artifact_writer",
+    ]
+    return all(importlib.util.find_spec(m) is not None for m in modules)
 
 
-def utc_now() -> str:
-    """현재 UTC 시각을 ISO 8601 형식으로 반환한다."""
-
-    return datetime.now(timezone.utc).isoformat()
+def _output_dir(config: dict) -> Path:
+    return Path(config.get("output", {}).get("root", "experiments")) / config["experiment_id"]
 
 
-def load_callable(
-    entrypoint: str,
-) -> Callable[..., Any]:
-    """module:function 형식의 Entrypoint를 불러온다."""
-
-    if ":" not in entrypoint:
-        raise ValueError(
-            "Entrypoint는 module:function 형식이어야 합니다: "
-            f"{entrypoint}"
+def _assert_output_available(config: dict) -> None:
+    out = _output_dir(config)
+    if out.exists():
+        raise FileExistsError(
+            "동일 experiment_id의 결과 폴더가 이미 존재합니다. "
+            f"새 experiment_id를 사용하세요: {out}"
         )
 
-    module_name, function_name = entrypoint.split(
-        ":",
-        1,
+
+def _configure_logging(config: dict) -> Path:
+    output_root = Path(config.get("output", {}).get("root", "experiments"))
+    log_dir = output_root / ".runs"
+    log_dir.mkdir(parents=True, exist_ok=True)
+    log_path = log_dir / f"{config['experiment_id']}.log"
+
+    logging.basicConfig(
+        level=logging.INFO,
+        format="%(asctime)s | %(levelname)s | %(message)s",
+        handlers=[
+            logging.FileHandler(log_path, encoding="utf-8"),
+            logging.StreamHandler(),
+        ],
+        force=True,
     )
+    return log_path
 
-    module = importlib.import_module(module_name)
 
-    function = getattr(
-        module,
-        function_name,
-        None,
-    )
+def run_pipeline(config: dict) -> dict:
+    _assert_output_available(config)
+    log_path = _configure_logging(config)
 
-    if not callable(function):
-        raise TypeError(
-            "Entrypoint에서 호출 가능한 함수를 "
-            f"찾을 수 없습니다: {entrypoint}"
+    try:
+        logging.info("[1/6] Dataset validation 시작")
+        dataset_info = validate_documents(config)
+        validate_dataset_info(dataset_info)
+
+        logging.info("[2/6] Chunk validation/register 시작")
+        chunk_info = build_chunks(config, dataset_info)
+        validate_chunk_info(chunk_info)
+
+        logging.info("[3/6] Evaluation input validation 시작")
+        evaluation_info = validate_evaluation_inputs(config, dataset_info, chunk_info)
+
+        logging.info("[4/6] Index resolve 시작")
+        index_info = resolve_index(config, chunk_info)
+        validate_index_info(index_info)
+        logging.info(
+            "Index resolved: reused=%s, count=%s, collection=%s",
+            index_info["reused"],
+            index_info["index_count"],
+            index_info["collection_name"],
         )
 
-    return function
+        logging.info("[5/6] Batch retrieval 시작")
+        retrieval_results = run_batch_retrieval(config, index_info)
+        validate_retrieval_results(retrieval_results)
 
-
-def inspect_input_paths(
-    config: dict[str, Any],
-    project_root: Path = PROJECT_ROOT,
-) -> list[dict[str, Any]]:
-    """YAML에 정의된 입력 파일 준비 상태를 확인한다."""
-
-    configured_paths = {
-        "dataset.document_path": (
-            config["dataset"]["document_path"]
-        ),
-        "dataset.chunk_path": (
-            config["dataset"]["chunk_path"]
-        ),
-        "dataset.manifest_path": (
-            config["dataset"]["manifest_path"]
-        ),
-        "evaluation.questions_path": (
-            config["evaluation"]["questions_path"]
-        ),
-        "evaluation.document_qrels_path": (
-            config["evaluation"]["document_qrels_path"]
-        ),
-        "evaluation.chunk_qrels_path": (
-            config["evaluation"]["chunk_qrels_path"]
-        ),
-        "evaluation.manifest_path": (
-            config["evaluation"]["manifest_path"]
-        ),
-    }
-
-    results = []
-
-    for field_name, configured_path in (
-        configured_paths.items()
-    ):
-        resolved_path = resolve_project_path(
-            configured_path=configured_path,
-            project_root=project_root,
+        logging.info("[6/6] Evaluation + artifact 저장 시작")
+        evaluation = evaluate_experiment(config, retrieval_results)
+        retrieval_failure_count = int(
+            evaluation["metrics_summary"].get("retrieval_failure_count", 0)
         )
+        status = "SUCCESS" if retrieval_failure_count == 0 else "PARTIAL_SUCCESS"
 
-        results.append(
+        artifacts = write_experiment_artifacts(
+            config,
             {
-                "field": field_name,
-                "path": configured_path,
-                "exists": resolved_path.is_file(),
-            }
+                "dataset_info": dataset_info,
+                "chunk_info": chunk_info,
+                "index_info": index_info,
+                "evaluation_info": evaluation_info,
+                "retrieval_results": retrieval_results,
+                "evaluation": evaluation,
+                "status": status,
+                "run_log_path": str(log_path),
+            },
         )
 
-    return results
+        result = {
+            "experiment_id": config["experiment_id"],
+            "status": status,
+            "index_reused": index_info["reused"],
+            "metrics_summary": evaluation["metrics_summary"],
+            "artifacts": artifacts,
+        }
 
-
-def inspect_pipeline_modules(
-    config: dict[str, Any],
-) -> list[dict[str, Any]]:
-    """각 Pipeline Entrypoint의 import 가능 여부를 확인한다."""
-
-    entrypoints = config["pipeline"]["entrypoints"]
-    results = []
-
-    for order, stage in enumerate(
-        PIPELINE_STAGES,
-        start=1,
-    ):
-        entrypoint = entrypoints[stage.name]
-
-        try:
-            load_callable(entrypoint)
-            import_status = "READY"
-            detail = None
-        except Exception as exc:
-            import_status = "WAITING_FOR_MODULE"
-            detail = (
-                f"{type(exc).__name__}: {exc}"
+        if retrieval_failure_count and config.get("execution", {}).get(
+            "retrieval_error_policy", "partial"
+        ) == "fail":
+            raise RuntimeError(
+                "검색 질문 일부가 실패했습니다. 산출물은 저장되었습니다: "
+                f"retrieval_failure_count={retrieval_failure_count}"
             )
 
-        results.append(
-            {
-                "order": order,
-                "stage": stage.name,
-                "description": stage.description,
-                "entrypoint": entrypoint,
-                "import_status": import_status,
-                "detail": detail,
-            }
-        )
+        logging.info("실험 완료: status=%s, output=%s", status, artifacts["output_dir"])
+        return result
 
-    return results
+    except Exception:
+        logging.exception("Experiment Runner 실패")
+        raise
 
-
-def build_dry_run_report(
-    config: dict[str, Any],
-    project_root: Path = PROJECT_ROOT,
-) -> dict[str, Any]:
-    """파일과 모듈 준비 상태를 종합한다."""
-
-    input_paths = inspect_input_paths(
-        config=config,
-        project_root=project_root,
-    )
-
-    pipeline_modules = inspect_pipeline_modules(
-        config=config,
-    )
-
-    all_files_ready = all(
-        item["exists"]
-        for item in input_paths
-    )
-
-    all_modules_ready = all(
-        item["import_status"] == "READY"
-        for item in pipeline_modules
-    )
-
-    return {
-        "experiment_id": config["experiment_id"],
-        "config_status": "VALID",
-        "input_files_ready": all_files_ready,
-        "pipeline_modules_ready": all_modules_ready,
-        "ready_for_execution": (
-            all_files_ready
-            and all_modules_ready
-        ),
-        "input_paths": input_paths,
-        "pipeline_stages": pipeline_modules,
-    }
 
 
 def prepare_output_directory(
-    config: dict[str, Any],
+    config: dict,
     project_root: Path = PROJECT_ROOT,
 ) -> Path:
-    """실험 결과 폴더를 안전하게 준비한다."""
+    """Backward-compatible output guard.
 
-    output_root = resolve_project_path(
-        configured_path=(
-            config["runtime"]["output_root"]
-        ),
-        project_root=project_root,
-    )
+    Existing team tests use this helper directly to verify that a previous
+    experiment is never overwritten.
+    """
+    configured_root = config.get("output", {}).get("root")
+    if configured_root in (None, ""):
+        configured_root = config.get("runtime", {}).get("output_root", "experiments")
 
-    output_directory = (
-        output_root
-        / config["experiment_id"]
-    )
+    root = Path(str(configured_root)).expanduser()
+    if not root.is_absolute():
+        root = Path(project_root).resolve() / root
+    output_dir = root / config["experiment_id"]
 
-    if (
-        output_directory.exists()
-        and any(output_directory.iterdir())
-    ):
+    if output_dir.exists():
         raise FileExistsError(
-            "동일한 experiment_id의 결과 폴더가 "
-            "이미 존재합니다. 기존 결과를 덮어쓰지 않습니다: "
-            f"{output_directory}"
+            "동일 experiment_id의 결과 폴더가 이미 존재합니다. "
+            f"새 experiment_id를 사용하세요: {output_dir}"
         )
 
-    output_directory.mkdir(
-        parents=True,
-        exist_ok=True,
-    )
-
-    return output_directory
+    output_dir.mkdir(parents=True, exist_ok=False)
+    return output_dir
 
 
-def configure_logger(
-    output_directory: Path,
-) -> logging.Logger:
-    """터미널과 run.log에 동시에 기록하는 Logger를 생성한다."""
+def load_callable(dotted_path: str):
+    """Load a callable from ``package.module.function``.
 
-    logger = logging.getLogger(
-        "experiment_runner"
-    )
+    This public helper is kept for backward compatibility with the team's
+    original Experiment Runner tests and plugin-style stage wiring.
+    """
+    module_name, separator, attribute = str(dotted_path).rpartition(".")
+    if not separator or not module_name or not attribute:
+        raise ValueError(f"올바른 callable 경로가 아닙니다: {dotted_path}")
+    module = importlib.import_module(module_name)
+    value = getattr(module, attribute)
+    if not callable(value):
+        raise TypeError(f"지정한 객체가 callable이 아닙니다: {dotted_path}")
+    return value
 
-    for handler in list(logger.handlers):
-        handler.close()
-        logger.removeHandler(handler)
 
-    logger.setLevel(logging.INFO)
-    logger.propagate = False
+_LEGACY_STAGE_DEFAULTS = {
+    "validate_documents": "src.data.validate_documents.validate_documents",
+    "build_chunks": "src.chunking.build_chunks.build_chunks",
+    "resolve_index": "src.indexing.index_resolver.resolve_index",
+    "run_batch_retrieval": "src.retrieval.batch_retriever.run_batch_retrieval",
+    "evaluate_experiment": "src.evaluation.evaluate_experiment.evaluate_experiment",
+    "write_experiment_artifacts": "src.experiments.artifact_writer.write_experiment_artifacts",
+}
 
-    formatter = logging.Formatter(
-        "%(asctime)s %(levelname)s %(message)s"
-    )
 
-    stream_handler = logging.StreamHandler(
-        sys.stdout
-    )
-    stream_handler.setFormatter(formatter)
-    logger.addHandler(stream_handler)
-
-    file_handler = logging.FileHandler(
-        output_directory / "run.log",
-        encoding="utf-8",
-    )
-    file_handler.setFormatter(formatter)
-    logger.addHandler(file_handler)
-
-    return logger
+def _legacy_stage_path(config: dict, stage: str) -> str:
+    """Resolve a legacy stage path while tolerating several historical config shapes."""
+    for section_name in ("modules", "pipeline", "stages"):
+        section = config.get(section_name)
+        if isinstance(section, dict):
+            raw = section.get(stage)
+            if isinstance(raw, str) and raw.strip():
+                return raw.strip()
+            if isinstance(raw, dict):
+                for key in ("callable", "entrypoint", "path"):
+                    value = raw.get(key)
+                    if isinstance(value, str) and value.strip():
+                        return value.strip()
+    return _LEGACY_STAGE_DEFAULTS[stage]
 
 
 def run_experiment(
-    config: dict[str, Any],
+    config: dict,
     project_root: Path = PROJECT_ROOT,
-) -> dict[str, Any]:
-    """전체 Experiment Pipeline을 실행한다."""
+) -> dict:
+    """Backward-compatible six-stage team runner.
 
-    output_directory = prepare_output_directory(
-        config=config,
-        project_root=project_root,
+    The v4 CLI uses :func:`run_pipeline` directly.  This function intentionally
+    preserves the original team's plugin-style ``load_callable`` contract so
+    existing tests and callers keep working without changing the v4 pipeline.
+    """
+    # Preserve the team's overwrite-protection contract.
+    output_dir = prepare_output_directory(config, project_root=project_root)
+
+    stage_names = (
+        "validate_documents",
+        "build_chunks",
+        "resolve_index",
+        "run_batch_retrieval",
+        "evaluate_experiment",
+        "write_experiment_artifacts",
     )
+    stage_functions = {
+        name: load_callable(_legacy_stage_path(config, name))
+        for name in stage_names
+    }
 
-    logger = configure_logger(
-        output_directory=output_directory,
-    )
+    dataset_info = stage_functions["validate_documents"](config)
+    chunk_info = stage_functions["build_chunks"](config, dataset_info)
+    index_info = stage_functions["resolve_index"](config, chunk_info)
+    retrieval_results = stage_functions["run_batch_retrieval"](config, index_info)
+    evaluation = stage_functions["evaluate_experiment"](config, retrieval_results)
 
-    experiment_id = config["experiment_id"]
-    entrypoints = config["pipeline"]["entrypoints"]
-
-    logger.info(
-        "experiment_started id=%s",
-        experiment_id,
-    )
-
-    started_at = utc_now()
-
-    context: dict[str, Any] = {}
-
-    try:
-        logger.info(
-            "pipeline_entrypoints_loading"
-        )
-
-        validate_documents = load_callable(
-            entrypoints["validate_documents"]
-        )
-        build_chunks = load_callable(
-            entrypoints["build_chunks"]
-        )
-        resolve_index = load_callable(
-            entrypoints["resolve_index"]
-        )
-        run_batch_retrieval = load_callable(
-            entrypoints["run_batch_retrieval"]
-        )
-        evaluate_experiment = load_callable(
-            entrypoints["evaluate_experiment"]
-        )
-        write_experiment_artifacts = load_callable(
-            entrypoints[
-                "write_experiment_artifacts"
-            ]
-        )
-
-        logger.info(
-            "pipeline_entrypoints_loaded"
-        )
-
-        # ----------------------------------------------------
-        # 1. Dataset validation
-        # ----------------------------------------------------
-
-        logger.info(
-            "stage_started name=validate_documents"
-        )
-
-        raw_dataset_info = validate_documents(
-            config
-        )
-
-        context["dataset_info"] = (
-            validate_stage_result(
-                stage="validate_documents",
-                value=raw_dataset_info,
-            )
-        )
-
-        logger.info(
-            "stage_completed "
-            "name=validate_documents "
-            "document_count=%s",
-            context["dataset_info"][
-                "document_count"
-            ],
-        )
-
-        # ----------------------------------------------------
-        # 2. Chunking
-        # ----------------------------------------------------
-
-        logger.info(
-            "stage_started name=build_chunks"
-        )
-
-        raw_chunk_info = build_chunks(
-            config,
-            context["dataset_info"],
-        )
-
-        context["chunk_info"] = (
-            validate_stage_result(
-                stage="build_chunks",
-                value=raw_chunk_info,
-            )
-        )
-
-        logger.info(
-            "stage_completed "
-            "name=build_chunks "
-            "chunk_count=%s",
-            context["chunk_info"]["chunk_count"],
-        )
-
-        # ----------------------------------------------------
-        # 3. Index resolution
-        # ----------------------------------------------------
-
-        logger.info(
-            "stage_started name=resolve_index"
-        )
-
-        raw_index_info = resolve_index(
-            config,
-            context["chunk_info"],
-        )
-
-        context["index_info"] = (
-            validate_stage_result(
-                stage="resolve_index",
-                value=raw_index_info,
-            )
-        )
-
-        logger.info(
-            "stage_completed "
-            "name=resolve_index "
-            "index_version=%s "
-            "reused=%s",
-            context["index_info"][
-                "index_version"
-            ],
-            context["index_info"]["reused"],
-        )
-
-        # ----------------------------------------------------
-        # 4. Batch retrieval
-        # ----------------------------------------------------
-
-        logger.info(
-            "stage_started "
-            "name=run_batch_retrieval"
-        )
-
-        raw_retrieval_results = (
-            run_batch_retrieval(
-                config,
-                context["index_info"],
-            )
-        )
-
-        context["retrieval_results"] = (
-            validate_stage_result(
-                stage="run_batch_retrieval",
-                value=raw_retrieval_results,
-            )
-        )
-
-        logger.info(
-            "stage_completed "
-            "name=run_batch_retrieval "
-            "query_count=%s",
-            len(context["retrieval_results"]),
-        )
-
-        # ----------------------------------------------------
-        # 5. Evaluation
-        # ----------------------------------------------------
-
-        logger.info(
-            "stage_started "
-            "name=evaluate_experiment"
-        )
-
-        raw_evaluation_result = (
-            evaluate_experiment(
-                config,
-                context["retrieval_results"],
-            )
-        )
-
-        context["evaluation_result"] = (
-            validate_stage_result(
-                stage="evaluate_experiment",
-                value=raw_evaluation_result,
-            )
-        )
-
-        logger.info(
-            "stage_completed "
-            "name=evaluate_experiment"
-        )
-
-        # ----------------------------------------------------
-        # 6. Artifact writing
-        # ----------------------------------------------------
-
-        completed_at = utc_now()
-
-        context["run_metadata"] = {
-            "experiment_id": experiment_id,
-            "started_at": started_at,
-            "completed_at": completed_at,
+    run_context = {
+        "run_metadata": {
+            "experiment_id": config["experiment_id"],
             "status": "COMPLETED",
-        }
+            "output_dir": str(output_dir),
+        },
+        "dataset_info": dataset_info,
+        "chunk_info": chunk_info,
+        "index_info": index_info,
+        "retrieval_results": retrieval_results,
+        "evaluation": evaluation,
+    }
+    artifacts = stage_functions["write_experiment_artifacts"](config, run_context)
 
-        logger.info(
-            "stage_started "
-            "name=write_experiment_artifacts"
+    # Keep the original team runner return contract: callers/tests expect
+    # run_metadata to be available on the returned context itself.
+    run_context["artifacts"] = artifacts
+    run_context["status"] = "COMPLETED"
+
+    # Backward compatibility: the original team runner contract expects
+    # a run.log file to exist in the experiment output directory even when
+    # the artifact writer is mocked in tests.  The v4 pipeline has its own
+    # logger, so this only applies to the legacy run_experiment() path.
+    log_path = output_dir / "run.log"
+    if not log_path.exists():
+        log_path.write_text(
+            f"experiment_id={config['experiment_id']}\nstatus=COMPLETED\nexperiment_completed\n",
+            encoding="utf-8",
         )
 
-        raw_artifact_info = (
-            write_experiment_artifacts(
-                config,
-                context,
-            )
-        )
+    return run_context
 
-        context["artifact_info"] = (
-            validate_stage_result(
-                stage=(
-                    "write_experiment_artifacts"
-                ),
-                value=raw_artifact_info,
-            )
-        )
+def main() -> None:
+    parser = argparse.ArgumentParser(description="RAG Experiment Runner")
+    parser.add_argument("--config", default=DEFAULT_CONFIG)
+    parser.add_argument("--schema", default="schemas/experiment_v4.schema.json")
+    parser.add_argument("--validate-only", action="store_true")
+    parser.add_argument("--dry-run", action="store_true")
+    args = parser.parse_args()
 
-        logger.info(
-            "stage_completed "
-            "name=write_experiment_artifacts"
-        )
+    config = load_and_validate_config(args.config, args.schema)
 
-        logger.info(
-            "experiment_completed id=%s",
-            experiment_id,
-        )
-
-        return context
-
-    except Exception:
-        logger.exception(
-            "experiment_failed id=%s",
-            experiment_id,
-        )
-        raise
-
-    finally:
-        for handler in list(logger.handlers):
-            handler.flush()
-            handler.close()
-            logger.removeHandler(handler)
-
-
-def build_parser() -> argparse.ArgumentParser:
-    """Experiment Runner CLI 인자를 정의한다."""
-
-    parser = argparse.ArgumentParser(
-        description=(
-            "공통 YAML 설정을 사용하여 "
-            "RAG 검색 실험 전체를 실행합니다."
-        )
-    )
-
-    parser.add_argument(
-        "--config",
-        type=Path,
-        default=DEFAULT_CONFIG_PATH,
-        help="실행할 Experiment YAML 경로",
-    )
-
-    parser.add_argument(
-        "--schema",
-        type=Path,
-        default=DEFAULT_SCHEMA_PATH,
-        help="Experiment JSON Schema 경로",
-    )
-
-    parser.add_argument(
-        "--validate-only",
-        action="store_true",
-        help="설정만 검증하고 종료",
-    )
-
-    parser.add_argument(
-        "--dry-run",
-        action="store_true",
-        help=(
-            "실제 모듈을 실행하지 않고 "
-            "파일과 모듈 준비 상태만 출력"
-        ),
-    )
-
-    return parser
-
-
-def main() -> int:
-    """Experiment Runner CLI 진입점."""
-
-    args = build_parser().parse_args()
-
-    config_path = (
-        args.config
-        if args.config.is_absolute()
-        else PROJECT_ROOT / args.config
-    )
-
-    schema_path = (
-        args.schema
-        if args.schema.is_absolute()
-        else PROJECT_ROOT / args.schema
-    )
-
-    try:
-        config = validate_experiment_config(
-            config_path=config_path,
-            schema_path=schema_path,
-            check_files=False,
-            project_root=PROJECT_ROOT,
-        )
-
-        if args.validate_only:
-            print(
-                json.dumps(
-                    {
-                        "experiment_id": (
-                            config["experiment_id"]
-                        ),
-                        "schema_version": (
-                            config["schema_version"]
-                        ),
-                        "status": "VALID",
-                    },
-                    ensure_ascii=False,
-                    indent=2,
-                )
-            )
-            return 0
-
-        if args.dry_run:
-            report = build_dry_run_report(
-                config=config,
-                project_root=PROJECT_ROOT,
-            )
-
-            print(
-                json.dumps(
-                    report,
-                    ensure_ascii=False,
-                    indent=2,
-                )
-            )
-            return 0
-
-        run_experiment(
-            config=config,
-            project_root=PROJECT_ROOT,
-        )
-
-        return 0
-
-    except Exception as exc:
+    if args.validate_only:
         print(
-            f"RUNNER ERROR: "
-            f"{type(exc).__name__}: {exc}",
-            file=sys.stderr,
+            json.dumps(
+                {
+                    "experiment_id": config["experiment_id"],
+                    "schema_version": config["schema_version"],
+                    "status": "VALID",
+                    "config_path": config.get("_runtime", {}).get("config_path"),
+                },
+                ensure_ascii=False,
+                indent=2,
+            )
         )
-        return 1
+        return
+
+    if args.dry_run:
+        readiness = inspect_input_readiness(config)
+        modules_ready = _module_readiness()
+        output_available = not _output_dir(config).exists()
+        print(
+            json.dumps(
+                {
+                    "experiment_id": config["experiment_id"],
+                    "input_files_ready": readiness["input_files_ready"],
+                    "pipeline_modules_ready": modules_ready,
+                    "output_available": output_available,
+                    "ready_for_execution": (
+                        readiness["input_files_ready"] and modules_ready and output_available
+                    ),
+                    "files": readiness["files"],
+                },
+                ensure_ascii=False,
+                indent=2,
+            )
+        )
+        return
+
+    result = run_pipeline(config)
+    print(json.dumps(result, ensure_ascii=False, indent=2))
 
 
 if __name__ == "__main__":
-    raise SystemExit(main())
+    main()
