@@ -1,5 +1,12 @@
 # 청킹 자동화 변경 보고서
 
+> **PR #26 리뷰 반영 후 변경된 내용 (이 문서보다 우선한다)**
+>
+> - 경로는 `chunking.chunk_path`, `chunking.manifest_path`, `evaluation.chunk_qrels_path`를 그대로 쓴다. `build_chunks`가 경로를 `chunks/<version>/`으로 다시 쓰는 동작은 없앴다. 조건별 경로가 필요하면 YAML 경로에 `{chunking_version}`을 쓴다(6장 대체).
+> - `chunking.mode: reuse | generate`를 추가했다. 기본값 `reuse`는 기존 C2 청크/qrels를 등록만 하고 생성하지 않는다. `generate`는 `c2_*` 버전을 쓸 수 없다.
+> - 확정 chunk qrels는 다시 만들지 않는다. 자동 결과는 `qrels_chunk.candidates.jsonl`로 분리하고, 검수가 필요하면 Runner가 Index 생성 전에 중단한다.
+> - 자세한 내용은 `build_chunks.md`와 `build_chunk_qrels.md`를 본다.
+
 ## 1. 변경 목적
 
 기존 청킹 자동화 코드는 현재 범위에서는 정상 동작했다. 다만 팀의 최종 목표는 단순히 준비된 청크를 검증하는 것이 아니라, 다음 조건을 바꿔가며 실험하는 것이다.

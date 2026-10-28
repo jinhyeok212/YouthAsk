@@ -50,6 +50,30 @@ SECTION_SLUGS = {
 FIXED_STRATEGIES = {"fixed", "character", "char"}
 SECTION_STRATEGIES = {"section", "c2_section", "section_aware"}
 
+# YAML(v4 schema)에서 허용하는 공식 전략 이름. 위 별칭은 내부 호출 호환용이다.
+SUPPORTED_STRATEGIES = ("fixed", "section")
+
+# chunk_id 생성 규칙. 규칙이 바뀌면 같은 version이라도 다른 청크이므로
+# generate 모드 signature에 포함해 기존 산출물과 섞이지 않게 한다.
+# 기존 C2 산출물(<doc>__overview__000)은 이 생성기가 만든 것이 아니다.
+CHUNK_ID_SCHEMES = {
+    "fixed": "fixed_char_v1",
+    "section": "section_heading_v1",
+}
+
+
+def normalize_strategy(strategy: str) -> str:
+    normalized = str(strategy).strip().lower()
+    if normalized in FIXED_STRATEGIES:
+        return "fixed"
+    if normalized in SECTION_STRATEGIES:
+        return "section"
+    raise ValueError(f"지원하지 않는 chunking.strategy입니다: {strategy}")
+
+
+def chunk_id_scheme(strategy: str) -> str:
+    return CHUNK_ID_SCHEMES[normalize_strategy(strategy)]
+
 
 def short_hash(text: str) -> str:
     return hashlib.sha256(text.encode("utf-8")).hexdigest()[:16]
@@ -245,6 +269,8 @@ def generate_section_chunks(
                         "chunk_id": chunk_id,
                         "document_id": did,
                         "chunk_index": chunk_index,
+                        # validate_inputs의 matched_section 검사가 읽는 필드
+                        "section": section["section_slug"],
                         "section_index": section["section_index"],
                         "section_name": section["section_name"],
                         "section_slug": section["section_slug"],
@@ -291,8 +317,8 @@ def generate_chunks(
 ) -> list[dict[str, Any]]:
     if unit not in {"characters", "character", "chars"}:
         raise ValueError(f"지원하지 않는 chunking.unit입니다: {unit}")
-    normalized_strategy = strategy.lower()
-    if normalized_strategy in FIXED_STRATEGIES:
+    normalized_strategy = normalize_strategy(strategy)
+    if normalized_strategy == "fixed":
         return generate_fixed_chunks(
             documents,
             version=version,
@@ -301,14 +327,12 @@ def generate_chunks(
             overlap=overlap,
             target_field=target_field,
         )
-    if normalized_strategy in SECTION_STRATEGIES:
-        return generate_section_chunks(
-            documents,
-            version=version,
-            strategy=normalized_strategy,
-            size=size,
-            overlap=overlap,
-            target_field=target_field,
-        )
-    raise ValueError(f"지원하지 않는 chunking.strategy입니다: {strategy}")
+    return generate_section_chunks(
+        documents,
+        version=version,
+        strategy=normalized_strategy,
+        size=size,
+        overlap=overlap,
+        target_field=target_field,
+    )
 

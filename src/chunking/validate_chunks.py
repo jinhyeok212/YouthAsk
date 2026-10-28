@@ -22,8 +22,13 @@ def validate_chunks(
     chunk_size: int,
     overlap: int,
     strict_max_length: bool = True,
+    require_full_coverage: bool = True,
 ) -> dict[str, Any]:
-    """Validate chunk artifacts before embedding/indexing stages consume them."""
+    """Validate chunk artifacts before embedding/indexing stages consume them.
+
+    require_full_coverage=False는 기존 검수 청크(reuse 모드)처럼 일부 문서만
+    청크로 만든 산출물을 등록할 때 사용한다. main의 기존 검증 범위와 같다.
+    """
     documents_path = Path(documents_path)
     chunks_path = Path(chunks_path)
 
@@ -105,7 +110,7 @@ def validate_chunks(
         errors.append(f"document_id별 chunk_index 순서가 잘못된 chunk가 {invalid_order_count}개 있습니다.")
     if over_size_count:
         errors.append(f"chunk_size보다 긴 chunk가 {over_size_count}개 있습니다.")
-    if missing_chunk_document_ids:
+    if missing_chunk_document_ids and require_full_coverage:
         errors.append(f"chunk가 생성되지 않은 document_id가 있습니다: {missing_chunk_document_ids[:5]}")
 
     if errors:

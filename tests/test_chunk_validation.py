@@ -31,9 +31,7 @@ class ChunkingAutomationTest(unittest.TestCase):
         self.tmp = tempfile.TemporaryDirectory()
         self.root = Path(self.tmp.name)
         self.documents_path = self.root / "data" / "documents.jsonl"
-        self.configured_chunks_path = self.root / "data" / "chunks.jsonl"
         self.qrels_path = self.root / "eval" / "qrels.jsonl"
-        self.configured_chunk_qrels_path = self.root / "eval" / "qrels_chunk.jsonl"
 
         text1 = "정책명: 청년 월세 지원\n신청 방법: 온라인 신청만 가능합니다.\n제출 서류: 주민등록등본"
         text2 = "정책명: 청년 일자리 지원\n지원 내용: 직무 교육을 제공합니다."
@@ -94,19 +92,26 @@ class ChunkingAutomationTest(unittest.TestCase):
                 "version": "test_dataset_v1",
                 "preprocessing_version": "test_preprocess_v1",
                 "document_path": str(self.documents_path),
-                "chunk_path": str(self.configured_chunks_path),
             },
             "evaluation": {
                 "document_qrels_path": str(self.qrels_path),
-                "chunk_qrels_path": str(self.configured_chunk_qrels_path),
+                "chunk_qrels_path": str(
+                    self.root / "eval" / "chunk_qrels" / "{chunking_version}" / "qrels_chunk.jsonl"
+                ),
             },
+            # YAML/v4 스키마 계약 위치: chunking.chunk_path, chunking.manifest_path
             "chunking": {
                 "version": version,
+                "mode": "generate",
                 "strategy": strategy,
                 "size": size,
                 "overlap": overlap,
                 "unit": "characters",
                 "target_field": "retrieval_text",
+                "chunk_path": str(self.root / "data" / "chunks" / "{chunking_version}" / "chunks.jsonl"),
+                "manifest_path": str(
+                    self.root / "data" / "chunks" / "{chunking_version}" / "chunk_manifest.json"
+                ),
             },
         }
 
@@ -115,14 +120,18 @@ class ChunkingAutomationTest(unittest.TestCase):
 
         self.assertTrue(Path(result["chunk_path"]).exists())
         self.assertTrue(Path(result["manifest_path"]).exists())
-        self.assertTrue(Path(result["chunk_qrels_path"]).exists())
         self.assertIn("fixed_20_ov5_v1", result["chunk_path"])
         self.assertGreater(result["chunk_count"], 0)
         self.assertEqual(result["chunk_qrels_status"], "review_required")
+        # 검수가 끝나지 않았으므로 확정 qrels는 만들지 않고 후보/검수 파일만 만든다.
+        self.assertFalse(Path(result["chunk_qrels_path"]).exists())
+        self.assertTrue(Path(result["chunk_qrels_candidates_path"]).exists())
+        self.assertTrue(Path(result["chunk_qrels_review_required_path"]).exists())
 
         manifest = read_json(Path(result["manifest_path"]))
         self.assertEqual(manifest["signature"]["chunking_version"], "fixed_20_ov5_v1")
         self.assertEqual(manifest["signature"]["strategy"], "fixed")
+        self.assertEqual(manifest["signature"]["chunk_id_scheme"], "fixed_char_v1")
         self.assertEqual(manifest["generator"]["size_meaning"], "final chunk text character limit")
 
     def test_same_input_and_condition_reuses_identical_chunks(self) -> None:
@@ -182,20 +191,25 @@ class ChunkingAutomationTest(unittest.TestCase):
 
     def test_build_chunk_qrels_maps_only_evidence_backed_rows(self) -> None:
         result = build_chunks(self.config, self.dataset_info)
-        qrels_result = build_chunk_qrels(
-            self.qrels_path,
-            result["chunk_path"],
-            result["chunk_qrels_path"],
-            result["chunk_qrels_review_required_path"],
-        )
 
-        mapped = read_jsonl(Path(result["chunk_qrels_path"]))
+        mapped = read_jsonl(Path(result["chunk_qrels_candidates_path"]))
         review = read_jsonl(Path(result["chunk_qrels_review_required_path"]))
 
-        self.assertEqual(qrels_result["status"], "review_required")
+        self.assertEqual(result["chunk_qrels_status"], "review_required")
         self.assertEqual({row["query_id"] for row in mapped}, {"q001"})
         self.assertEqual({row["query_id"] for row in review}, {"q002"})
         self.assertTrue(all(row["mapping_method"] == "evidence_span" for row in mapped))
+
+    def test_standalone_build_chunk_qrels_refuses_to_overwrite(self) -> None:
+        result = build_chunks(self.config, self.dataset_info)
+        output = self.root / "standalone" / "qrels_chunk.jsonl"
+
+        qrels_result = build_chunk_qrels(self.qrels_path, result["chunk_path"], output)
+        self.assertEqual(qrels_result["status"], "review_required")
+        self.assertEqual({row["query_id"] for row in read_jsonl(output)}, {"q001"})
+
+        with self.assertRaises(FileExistsError):
+            build_chunk_qrels(self.qrels_path, result["chunk_path"], output)
 
 
 if __name__ == "__main__":
