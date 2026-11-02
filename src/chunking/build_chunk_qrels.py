@@ -328,9 +328,13 @@ def _qrels_meta(
 
 
 def _current_source_sha(document_qrels_path: Path | None, *, required: bool) -> str | None:
-    """원본 문서 qrels의 현재 해시. 비교 기준이 있는데 파일이 없으면 중단한다."""
+    """원본 문서 qrels의 현재 해시. 비교 기준이 있는데 경로나 파일이 없으면 중단한다."""
     if document_qrels_path is None:
-        # reuse 모드: 원본 qrels와 연결하지 않는다(legacy 확정본).
+        if required:
+            raise ValueError(
+                "확정 chunk qrels가 원본 문서 qrels 기준으로 추적되고 있지만 "
+                "evaluation.document_qrels_path가 전달되지 않아 정답 근거 변경 여부를 확인할 수 없습니다."
+            )
         return None
     if not document_qrels_path.exists():
         if required:
@@ -451,7 +455,11 @@ def resolve_chunk_qrels(
                     chunk_sha256=chunk_sha256,
                     qrels_sha256=qrels_sha,
                     # 지금 확정본을 등록하는 기준 원본. 이후 원본이 바뀌면 감지한다.
-                    source_document_qrels_sha256=current_source_sha,
+                    # legacy 확정본(C2)은 어떤 원본으로 만들었는지 알 수 없어 추적하지 않는다.
+                    # 추적이 필요하면 검수 후 approve_chunk_qrels()로 명시 승인한다.
+                    source_document_qrels_sha256=(
+                        None if bootstrap_status == "legacy_bootstrap" else current_source_sha
+                    ),
                 ),
             )
         elif recorded_source_sha is not None and current_source_sha != recorded_source_sha:

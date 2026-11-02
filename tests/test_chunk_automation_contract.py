@@ -17,7 +17,7 @@ import pytest
 import yaml
 
 from src.chunking import manifest as manifest_module
-from src.chunking.build_chunk_qrels import approve_chunk_qrels
+from src.chunking.build_chunk_qrels import approve_chunk_qrels, resolve_chunk_qrels
 from src.chunking.build_chunks import build_chunks
 from src.chunking.generators import chunk_id_scheme, generate_chunks
 from src.chunking.validate_chunks import validate_chunks
@@ -671,3 +671,134 @@ def test_preamble_evidence_maps_to_chunk_end_to_end(ws: Workspace) -> None:
     assert chunk_info["chunk_qrels_status"] == "ready"
     answer = next(r for r in read_jsonl(Path(chunk_info["chunk_qrels_path"])) if r["query_id"] == "q001")
     assert "__sec_00_preamble__" in answer["chunk_id"]
+
+
+# ---------------------------------------------------------------------------
+# 재검토 v3 P2: 원본 추적 중인 확정본을 reuse해도 원본 변경을 확인한다
+# ---------------------------------------------------------------------------
+def _legacy_c2_config(ws: Workspace) -> dict:
+    config = ws.load()
+    write_jsonl(
+        Path(config["chunking"]["chunk_path"]),
+        [
+            {"chunk_id": "policy_001__application__000", "document_id": "policy_001", "chunk_index": 0,
+             "section": "application", "text": "온라인 신청"},
+            {"chunk_id": "policy_002__overview__000", "document_id": "policy_002", "chunk_index": 0,
+             "section": "overview", "text": "일자리 지원 개요"},
+        ],
+    )
+    write_jsonl(
+        Path(config["evaluation"]["chunk_qrels_path"]),
+        [
+            {"query_id": "q001", "document_id": "policy_001", "chunk_id": "policy_001__application__000",
+             "relevance": 1},
+            {"query_id": "q002", "document_id": "policy_002", "chunk_id": "policy_002__overview__000",
+             "relevance": 1},
+        ],
+    )
+    write_jsonl(ws.document_qrels, no_evidence_qrels())
+    return config
+
+
+def _meta_of(info: dict) -> dict:
+    return json.loads(Path(info["chunk_qrels_meta_path"]).read_text(encoding="utf-8"))
+
+
+def _generated_then_reuse_config(ws: Workspace) -> tuple[dict, dict]:
+    write_jsonl(ws.document_qrels, _evidence_rows({"evidence_text": "온라인 신청"}))
+    overrides = dict(FIXED)
+    generated = build_chunks(ws.load(**overrides), ws.dataset_info)
+    assert generated["chunk_qrels_review_status"] == "auto_ready"
+    overrides["mode"] = "reuse"
+    return ws.load(name="exp_reuse", **overrides), generated
+
+
+def test_generated_qrels_can_be_reused_with_same_source(ws: Workspace) -> None:
+    config, generated = _generated_then_reuse_config(ws)
+    qrels_path = Path(config["evaluation"]["chunk_qrels_path"])
+    qrels_before = sha(qrels_path)
+    meta_before = Path(generated["chunk_qrels_meta_path"]).read_bytes()
+
+    reused = build_chunks(config, ws.dataset_info)
+
+    assert reused["chunk_qrels_status"] == "ready"
+    assert reused["chunking_mode"] == "reuse"
+    assert sha(qrels_path) == qrels_before
+    assert Path(reused["chunk_qrels_meta_path"]).read_bytes() == meta_before
+    assert validate_evaluation_inputs(config, ws.dataset_info, reused)["status"] == "VALID"
+
+
+def test_approved_legacy_c2_can_be_reused(ws: Workspace) -> None:
+    config = _legacy_c2_config(ws)
+    first = build_chunks(config, ws.dataset_info)
+    assert _meta_of(first)["source_document_qrels_sha256"] is None
+
+    approved = approve_chunk_qrels(config)
+    assert approved["source_document_qrels_sha256"] == sha(ws.document_qrels)
+
+    again = build_chunks(config, ws.dataset_info)
+    assert again["chunk_qrels_status"] == "ready"
+    assert again["chunk_qrels_review_status"] == "reviewed"
+
+
+@pytest.mark.parametrize("tracked_by", ["generate", "approve"])
+def test_reuse_detects_source_change_for_tracked_qrels(ws: Workspace, tracked_by: str) -> None:
+    if tracked_by == "generate":
+        config, _ = _generated_then_reuse_config(ws)
+        changed = _evidence_rows({"evidence_text": "주민등록등본"})
+    else:
+        config = _legacy_c2_config(ws)
+        build_chunks(config, ws.dataset_info)
+        approve_chunk_qrels(config)
+        changed = no_evidence_qrels() + [{"query_id": "q003", "document_id": "policy_001", "relevance": 1}]
+    qrels_path = Path(config["evaluation"]["chunk_qrels_path"])
+    meta_path = qrels_path.with_name("qrels_chunk.meta.json")
+    qrels_before, meta_before = sha(qrels_path), sha(meta_path)
+
+    write_jsonl(ws.document_qrels, changed)
+    result = build_chunks(config, ws.dataset_info)
+
+    assert result["chunk_qrels_status"] == "review_required"
+    assert result["chunk_qrels_review_status"] == "source_changed"
+    assert sha(qrels_path) == qrels_before
+    assert sha(meta_path) == meta_before
+    with pytest.raises(runner.ChunkQrelsReviewRequired):
+        runner._assert_chunk_qrels_ready(result)
+
+
+def test_reuse_of_tracked_qrels_without_source_file_is_input_error(ws: Workspace) -> None:
+    config, _ = _generated_then_reuse_config(ws)
+    ws.document_qrels.unlink()
+    with pytest.raises(ValueError, match="정답 근거 변경 여부"):
+        build_chunks(config, ws.dataset_info)
+
+
+def test_tracked_qrels_without_source_path_is_input_error(ws: Workspace) -> None:
+    config, generated = _generated_then_reuse_config(ws)
+    chunk_path = Path(generated["chunk_path"])
+    with pytest.raises(ValueError, match="document_qrels_path"):
+        resolve_chunk_qrels(
+            chunk_qrels_path=Path(config["evaluation"]["chunk_qrels_path"]),
+            chunk_path=chunk_path,
+            chunks=read_jsonl(chunk_path),
+            chunk_sha256=sha(chunk_path),
+            chunking_version=config["chunking"]["version"],
+            document_qrels_path=None,
+            allow_auto=False,
+            bootstrap_status="legacy_bootstrap",
+            staged=manifest_module.StagedOutputs(),
+        )
+
+
+def test_untracked_legacy_c2_reuse_is_unchanged(ws: Workspace) -> None:
+    config = _legacy_c2_config(ws)
+    first = build_chunks(config, ws.dataset_info)
+    meta_bytes = Path(first["chunk_qrels_meta_path"]).read_bytes()
+
+    # 출처를 모르는 legacy 확정본은 원본 qrels가 바뀌어도 기존처럼 진행한다.
+    write_jsonl(ws.document_qrels, no_evidence_qrels()[:1])
+    second = build_chunks(config, ws.dataset_info)
+
+    assert first["chunk_qrels_review_status"] == second["chunk_qrels_review_status"] == "legacy_bootstrap"
+    assert second["chunk_qrels_status"] == "ready"
+    assert Path(second["chunk_qrels_meta_path"]).read_bytes() == meta_bytes

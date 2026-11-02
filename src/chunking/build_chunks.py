@@ -38,6 +38,11 @@ def chunking_mode(config: dict[str, Any]) -> str:
     return mode
 
 
+def _configured_document_qrels_path(config: dict[str, Any]) -> Path | None:
+    value = str(config.get("evaluation", {}).get("document_qrels_path") or "").strip()
+    return project_path(value) if value else None
+
+
 def _reuse_existing_chunks(
     config: dict[str, Any],
     dataset_info: dict[str, Any],
@@ -105,7 +110,8 @@ def _reuse_existing_chunks(
             chunks=read_jsonl(chunk_path),
             chunk_sha256=chunk_sha,
             chunking_version=str(chunking["version"]),
-            document_qrels_path=None,
+            # 원본 추적 중인 확정본(generate 결과, approve한 C2)은 reuse에서도 원본 변경을 확인한다.
+            document_qrels_path=_configured_document_qrels_path(config),
             allow_auto=False,
             bootstrap_status="legacy_bootstrap",
             staged=staged,
