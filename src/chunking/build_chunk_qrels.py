@@ -1,12 +1,15 @@
 from __future__ import annotations
 
 import json
+import os
 from collections import defaultdict
 from pathlib import Path
 from typing import Any
 
 from src.chunking.manifest import (
     StagedOutputs,
+    configured_chunk_paths,
+    project_path,
     qrels_sidecar_paths,
     read_json,
     sha256_file,
@@ -324,6 +327,58 @@ def _qrels_meta(
     return meta
 
 
+def _current_source_sha(document_qrels_path: Path | None, *, required: bool) -> str | None:
+    """원본 문서 qrels의 현재 해시. 비교 기준이 있는데 파일이 없으면 중단한다."""
+    if document_qrels_path is None:
+        # reuse 모드: 원본 qrels와 연결하지 않는다(legacy 확정본).
+        return None
+    if not document_qrels_path.exists():
+        if required:
+            raise ValueError(
+                "확정 chunk qrels의 기준 원본 문서 qrels가 없어 정답 근거 변경 여부를 확인할 수 없습니다: "
+                f"{document_qrels_path}"
+            )
+        return None
+    return sha256_file(document_qrels_path)
+
+
+def _chunk_ids_by_query(rows: list[dict[str, Any]]) -> dict[str, list[str]]:
+    by_query: dict[str, list[str]] = defaultdict(list)
+    for row in rows:
+        by_query[str(row.get("query_id") or "").strip()].append(str(row.get("chunk_id") or "").strip())
+    return {query_id: sorted(chunk_ids) for query_id, chunk_ids in by_query.items()}
+
+
+def _source_change_review_rows(
+    *,
+    confirmed_rows: list[dict[str, Any]],
+    remapped_rows: list[dict[str, Any]],
+    remap_review_rows: list[dict[str, Any]],
+    recorded_source_sha: str,
+    current_source_sha: str | None,
+) -> list[dict[str, Any]]:
+    """원본 qrels 변경 후 검수할 항목. 질문별로 확정 정답과 새 후보를 나란히 둔다."""
+    confirmed = _chunk_ids_by_query(confirmed_rows)
+    remapped = _chunk_ids_by_query(remapped_rows)
+    rows: list[dict[str, Any]] = [
+        {
+            "query_id": query_id,
+            "reason": "answer_differs_after_source_qrels_changed",
+            "confirmed_chunk_ids": confirmed.get(query_id, []),
+            "candidate_chunk_ids": remapped.get(query_id, []),
+        }
+        for query_id in sorted(set(confirmed) | set(remapped))
+        if confirmed.get(query_id, []) != remapped.get(query_id, [])
+    ]
+    rows.extend(remap_review_rows)
+    if not rows:
+        rows.append({"query_id": "", "reason": "source_document_qrels_changed"})
+    for row in rows:
+        row["recorded_source_document_qrels_sha256"] = recorded_source_sha
+        row["current_source_document_qrels_sha256"] = current_source_sha
+    return rows
+
+
 def resolve_chunk_qrels(
     *,
     chunk_qrels_path: Path,
@@ -340,6 +395,9 @@ def resolve_chunk_qrels(
 
     - 확정본(chunk_qrels_path)이 있으면 절대 쓰지 않는다. 검증만 한다.
       메타의 chunk_sha256/chunking_version이 현재 청크와 다르면 보존한 채 중단한다.
+      메타의 원본 문서 qrels 해시가 현재와 다르면(정답 근거 변경) review_required를 반환한다.
+      단, 사람이 고치지 않은 auto_ready 확정본을 다시 매핑한 결과가 같으면 해시만 갱신한다.
+      재검수 후에는 approve_chunk_qrels()로 현재 원본 기준 승인을 기록한다.
     - 확정본이 없고 allow_auto이면 근거 기반으로 매핑한다.
       전부 매핑되면 확정본을 만들고, 아니면 후보/검수 파일만 만들고 review_required를 반환한다.
     - 쓰기는 staged에 등록만 한다. 반영은 호출자가 검증을 마친 뒤 commit한다.
@@ -378,6 +436,11 @@ def resolve_chunk_qrels(
             )
         validate_chunk_qrels(chunk_qrels_path, chunk_path)
 
+        recorded_source_sha = meta.get("source_document_qrels_sha256") if meta else None
+        current_source_sha = _current_source_sha(
+            document_qrels_path, required=recorded_source_sha is not None
+        )
+
         if meta is None:
             review_status = bootstrap_status
             write_json(
@@ -387,7 +450,49 @@ def resolve_chunk_qrels(
                     chunking_version=chunking_version,
                     chunk_sha256=chunk_sha256,
                     qrels_sha256=qrels_sha,
-                    source_document_qrels_sha256=None,
+                    # 지금 확정본을 등록하는 기준 원본. 이후 원본이 바뀌면 감지한다.
+                    source_document_qrels_sha256=current_source_sha,
+                ),
+            )
+        elif recorded_source_sha is not None and current_source_sha != recorded_source_sha:
+            # 확정 이후 원본 문서 qrels(정답 근거)가 바뀐 경우.
+            # 확정본은 건드리지 않고, 새 근거로 다시 매핑한 결과를 비교한다.
+            remapped_rows, remap_review_rows = map_chunk_qrels(
+                _read_jsonl(document_qrels_path), chunks
+            )
+            untouched_auto = (
+                meta.get("status") == "auto_ready" and meta.get("qrels_sha256") == qrels_sha
+            )
+            if not (untouched_auto and not remap_review_rows and remapped_rows == rows):
+                review_rows = _source_change_review_rows(
+                    confirmed_rows=rows,
+                    remapped_rows=remapped_rows,
+                    remap_review_rows=remap_review_rows,
+                    recorded_source_sha=recorded_source_sha,
+                    current_source_sha=current_source_sha,
+                )
+                _write_jsonl(staged.path_for(sidecars["candidates"]), remapped_rows)
+                _write_jsonl(staged.path_for(sidecars["review_required"]), review_rows)
+                return result | {
+                    "status": "review_required",
+                    "review_status": "source_changed",
+                    "qrels_sha256": qrels_sha,
+                    "mapped_row_count": len(remapped_rows),
+                    "review_required_count": len(review_rows),
+                    "auto_generated": False,
+                }
+
+            # 다시 매핑해도 정답이 같다: 원본 기준 해시만 갱신한다.
+            review_status = "auto_ready"
+            write_json(
+                staged.path_for(meta_path),
+                _qrels_meta(
+                    status=review_status,
+                    chunking_version=chunking_version,
+                    chunk_sha256=chunk_sha256,
+                    qrels_sha256=qrels_sha,
+                    source_document_qrels_sha256=current_source_sha,
+                    previous=meta,
                 ),
             )
         elif meta.get("qrels_sha256") != qrels_sha:
@@ -454,3 +559,68 @@ def resolve_chunk_qrels(
         "review_required_count": len(review_rows),
         "auto_generated": True,
     }
+
+
+def approve_chunk_qrels(config: dict[str, Any]) -> dict[str, Any]:
+    """사람이 확정 chunk qrels를 다시 검수한 뒤 현재 청크·원본 qrels 기준으로 승인을 기록한다.
+
+    확정본 내용은 바꾸지 않고 meta만 갱신한다. 원본 문서 qrels가 바뀌어
+    review_required(source_changed)로 멈춘 경우, 검수 후 이 함수로 다시 진행한다.
+    """
+    chunk_path, manifest_path, chunk_qrels_path = configured_chunk_paths(config)
+    document_qrels_path = project_path(config["evaluation"]["document_qrels_path"])
+    for label, path in (
+        ("확정 chunk qrels", chunk_qrels_path),
+        ("chunks.jsonl", chunk_path),
+        ("chunk_manifest.json", manifest_path),
+    ):
+        if not path.exists():
+            raise FileNotFoundError(f"승인할 {label} 파일이 없습니다: {path}")
+
+    chunk_sha = sha256_file(chunk_path)
+    manifest_sha = read_json(manifest_path).get("chunk_sha256")
+    if manifest_sha != chunk_sha:
+        raise ValueError(
+            f"chunks.jsonl이 manifest와 다릅니다. 승인하지 않습니다: manifest={manifest_sha}, actual={chunk_sha}"
+        )
+    if not _read_jsonl(chunk_qrels_path):
+        raise ValueError(f"확정 chunk qrels 파일이 비어 있습니다: {chunk_qrels_path}")
+    validate_chunk_qrels(chunk_qrels_path, chunk_path)
+
+    meta_path = qrels_sidecar_paths(chunk_qrels_path)["meta"]
+    previous = read_json(meta_path) if meta_path.exists() else None
+    meta = _qrels_meta(
+        status="reviewed",
+        chunking_version=str(config["chunking"]["version"]),
+        chunk_sha256=chunk_sha,
+        qrels_sha256=sha256_file(chunk_qrels_path),
+        source_document_qrels_sha256=_current_source_sha(document_qrels_path, required=False),
+        previous=previous,
+    )
+    temp_path = meta_path.with_name(f".{meta_path.name}.approve.tmp")
+    try:
+        write_json(temp_path, meta)
+        os.replace(temp_path, meta_path)
+    finally:
+        temp_path.unlink(missing_ok=True)
+    return meta | {"meta_path": str(meta_path)}
+
+
+def main() -> None:
+    import argparse
+
+    from src.experiments.config_validator import load_and_validate_config
+
+    parser = argparse.ArgumentParser(description="Chunk qrels 관리")
+    subcommands = parser.add_subparsers(dest="command", required=True)
+    approve = subcommands.add_parser("approve", help="재검수한 확정 chunk qrels를 현재 기준으로 승인")
+    approve.add_argument("--config", required=True)
+    approve.add_argument("--schema", default="schemas/experiment_v4.schema.json")
+    args = parser.parse_args()
+
+    meta = approve_chunk_qrels(load_and_validate_config(args.config, args.schema))
+    print(json.dumps(meta, ensure_ascii=False, indent=2))
+
+
+if __name__ == "__main__":
+    main()

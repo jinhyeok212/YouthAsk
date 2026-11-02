@@ -10,12 +10,17 @@ from __future__ import annotations
 import copy
 import hashlib
 import json
+import os
 from pathlib import Path
 
 import pytest
 import yaml
 
+from src.chunking import manifest as manifest_module
+from src.chunking.build_chunk_qrels import approve_chunk_qrels
 from src.chunking.build_chunks import build_chunks
+from src.chunking.generators import chunk_id_scheme, generate_chunks
+from src.chunking.validate_chunks import validate_chunks
 from src.evaluation.evaluate_experiment import evaluate_experiment
 from src.evaluation.validate_inputs import validate_evaluation_inputs
 from src.experiments import runner
@@ -373,3 +378,296 @@ def test_failure_after_staging_leaves_no_partial_outputs(ws: Workspace) -> None:
     assert not list(chunk_path.parent.glob("*.tmp"))
     assert not list(qrels_path.parent.glob("*.tmp"))
     assert sha(qrels_path) == before
+
+
+# ---------------------------------------------------------------------------
+# 재검토 P1: 확정 이후 원본 문서 qrels(정답 근거)가 바뀌면 과거 정답으로 채점하지 않는다
+# ---------------------------------------------------------------------------
+FIXED = generate_overrides(version="fixed_40_ov5_v1", strategy="fixed")
+
+
+def _evidence_rows(q001_evidence: dict) -> list[dict]:
+    return [
+        {"query_id": "q001", "document_id": "policy_001", "relevance": 1, **q001_evidence},
+        {"query_id": "q002", "document_id": "policy_002", "relevance": 1, "evidence_text": "직무 교육"},
+    ]
+
+
+def _span_of(text: str) -> dict:
+    start = TEXT_1.index(text)
+    return {"evidence_start_char": start, "evidence_end_char": start + len(text)}
+
+
+@pytest.mark.parametrize(
+    "changed_evidence",
+    [{"evidence_text": "주민등록등본"}, _span_of("주민등록등본")],
+    ids=["evidence_text", "evidence_span"],
+)
+def test_changed_source_evidence_requires_review(ws: Workspace, changed_evidence: dict) -> None:
+    write_jsonl(ws.document_qrels, _evidence_rows({"evidence_text": "온라인 신청"}))
+    config = ws.load(**FIXED)
+    first = build_chunks(config, ws.dataset_info)
+    assert first["chunk_qrels_review_status"] == "auto_ready"
+    qrels_path = Path(config["evaluation"]["chunk_qrels_path"])
+    meta_path = Path(first["chunk_qrels_meta_path"])
+    qrels_before, meta_before = sha(qrels_path), sha(meta_path)
+    old_answer = {r["chunk_id"] for r in read_jsonl(qrels_path) if r["query_id"] == "q001"}
+
+    # 같은 query_id/document_id에서 근거만 바꾼다.
+    write_jsonl(ws.document_qrels, _evidence_rows(changed_evidence))
+    second = build_chunks(config, ws.dataset_info)
+
+    assert second["chunk_qrels_status"] == "review_required"
+    assert second["chunk_qrels_review_status"] == "source_changed"
+    assert sha(qrels_path) == qrels_before
+    assert sha(meta_path) == meta_before
+    review = read_jsonl(Path(second["chunk_qrels_review_required_path"]))
+    q001 = next(row for row in review if row["query_id"] == "q001")
+    assert set(q001["confirmed_chunk_ids"]) == old_answer
+    assert set(q001["candidate_chunk_ids"]) != old_answer
+    with pytest.raises(runner.ChunkQrelsReviewRequired):
+        runner._assert_chunk_qrels_ready(second)
+
+    # 사람이 확인하기 전까지는 재실행해도 계속 멈춘다.
+    assert build_chunks(config, ws.dataset_info)["chunk_qrels_status"] == "review_required"
+
+
+def test_source_change_without_answer_change_keeps_auto_qrels(ws: Workspace) -> None:
+    write_jsonl(ws.document_qrels, _evidence_rows({"evidence_text": "온라인 신청"}))
+    config = ws.load(**FIXED)
+    first = build_chunks(config, ws.dataset_info)
+    qrels_path = Path(config["evaluation"]["chunk_qrels_path"])
+    qrels_before = sha(qrels_path)
+
+    write_jsonl(ws.document_qrels, _evidence_rows({"evidence_text": "온라인 신청", "note": "오타 수정"}))
+    second = build_chunks(config, ws.dataset_info)
+
+    assert second["chunk_qrels_status"] == "ready"
+    assert second["chunk_qrels_review_status"] == "auto_ready"
+    assert sha(qrels_path) == qrels_before
+    meta = json.loads(Path(first["chunk_qrels_meta_path"]).read_text(encoding="utf-8"))
+    assert meta["source_document_qrels_sha256"] == sha(ws.document_qrels)
+
+
+def test_reviewed_qrels_need_approval_after_source_change(ws: Workspace) -> None:
+    write_jsonl(ws.document_qrels, _evidence_rows({"evidence_text": "온라인 신청"}))
+    config = ws.load(**FIXED)
+    build_chunks(config, ws.dataset_info)
+    qrels_path = Path(config["evaluation"]["chunk_qrels_path"])
+
+    # 사람이 확정본을 고친다 → reviewed
+    rows = read_jsonl(qrels_path)
+    rows[0]["reviewer_note"] = "확인함"
+    write_jsonl(qrels_path, rows)
+    assert build_chunks(config, ws.dataset_info)["chunk_qrels_review_status"] == "reviewed"
+    reviewed_sha = sha(qrels_path)
+
+    # 정답 결과가 같아 보여도 사람이 검수한 정답은 자동으로 다시 승인하지 않는다.
+    write_jsonl(ws.document_qrels, _evidence_rows({"evidence_text": "온라인 신청", "note": "수정"}))
+    assert build_chunks(config, ws.dataset_info)["chunk_qrels_status"] == "review_required"
+
+    meta = approve_chunk_qrels(config)
+    assert meta["status"] == "reviewed"
+    assert meta["source_document_qrels_sha256"] == sha(ws.document_qrels)
+
+    after = build_chunks(config, ws.dataset_info)
+    assert after["chunk_qrels_status"] == "ready"
+    assert after["chunk_qrels_review_status"] == "reviewed"
+    assert sha(qrels_path) == reviewed_sha
+    assert validate_evaluation_inputs(config, ws.dataset_info, after)["status"] == "VALID"
+
+
+def test_missing_source_qrels_is_not_silently_ignored(ws: Workspace) -> None:
+    write_jsonl(ws.document_qrels, _evidence_rows({"evidence_text": "온라인 신청"}))
+    config = ws.load(**FIXED)
+    build_chunks(config, ws.dataset_info)
+    ws.document_qrels.unlink()
+
+    with pytest.raises(ValueError, match="정답 근거 변경 여부"):
+        build_chunks(config, ws.dataset_info)
+
+
+# ---------------------------------------------------------------------------
+# 재검토 P2: 파일 반영(commit) 도중 실패해도 수동 삭제 없이 재시도할 수 있다
+# ---------------------------------------------------------------------------
+def _fail_replace_once(monkeypatch, target_name: str) -> None:
+    """임시 파일 → target_name 교체에서 한 번만 PermissionError를 낸다."""
+    real_replace = os.replace
+    state = {"failed": False}
+
+    def fake_replace(src, dst):
+        if not state["failed"] and str(src).endswith(".tmp") and Path(dst).name == target_name:
+            state["failed"] = True
+            raise PermissionError(f"주입된 잠금 오류: {dst}")
+        return real_replace(src, dst)
+
+    monkeypatch.setattr(os, "replace", fake_replace)
+
+
+def _leftovers(*dirs: Path) -> list[Path]:
+    return [
+        path
+        for directory in dirs
+        for pattern in ("*.tmp", "*.bak", ".staged_commit.*")
+        for path in directory.glob(pattern)
+    ]
+
+
+@pytest.mark.parametrize(
+    "target_name", ["chunks.jsonl", "qrels_chunk.meta.json", "chunk_manifest.json"],
+    ids=["first_file", "middle_file", "manifest_last"],
+)
+def test_commit_failure_rolls_back_and_retry_succeeds(ws: Workspace, monkeypatch, target_name: str) -> None:
+    write_jsonl(ws.document_qrels, evidence_qrels())
+    config = ws.load(**generate_overrides())
+    chunk_path = Path(config["chunking"]["chunk_path"])
+    manifest_path = Path(config["chunking"]["manifest_path"])
+    qrels_path = Path(config["evaluation"]["chunk_qrels_path"])
+
+    with monkeypatch.context() as patch:
+        _fail_replace_once(patch, target_name)
+        with pytest.raises(PermissionError, match="주입된"):
+            build_chunks(config, ws.dataset_info)
+
+    # 이번 실행이 새로 만든 파일은 모두 되돌아간다.
+    for path in (chunk_path, manifest_path, qrels_path, qrels_path.with_name("qrels_chunk.meta.json")):
+        assert not path.exists(), path
+    assert _leftovers(chunk_path.parent, qrels_path.parent) == []
+
+    result = build_chunks(config, ws.dataset_info)
+    assert result["chunk_qrels_status"] == "ready"
+    assert _leftovers(chunk_path.parent, qrels_path.parent) == []
+
+
+def test_commit_failure_restores_existing_files(ws: Workspace, monkeypatch) -> None:
+    write_jsonl(ws.document_qrels, evidence_qrels())
+    config = ws.load(**generate_overrides())
+    first = build_chunks(config, ws.dataset_info)
+    qrels_path = Path(config["evaluation"]["chunk_qrels_path"])
+    meta_path = Path(first["chunk_qrels_meta_path"])
+
+    rows = read_jsonl(qrels_path)
+    rows[0]["reviewer_note"] = "확인함"
+    write_jsonl(qrels_path, rows)
+    qrels_before, meta_before = sha(qrels_path), meta_path.read_bytes()
+
+    # 다음 실행은 기존 meta를 reviewed로 갱신한다. 그 교체에서 실패시킨다.
+    with monkeypatch.context() as patch:
+        _fail_replace_once(patch, "qrels_chunk.meta.json")
+        with pytest.raises(PermissionError):
+            build_chunks(config, ws.dataset_info)
+
+    assert meta_path.read_bytes() == meta_before
+    assert sha(qrels_path) == qrels_before
+    assert _leftovers(meta_path.parent, Path(first["chunk_path"]).parent) == []
+    assert build_chunks(config, ws.dataset_info)["chunk_qrels_review_status"] == "reviewed"
+
+
+def test_interrupted_commit_is_recovered_on_next_run(ws: Workspace, monkeypatch) -> None:
+    write_jsonl(ws.document_qrels, evidence_qrels())
+    config = ws.load(**generate_overrides())
+    chunk_path = Path(config["chunking"]["chunk_path"])
+
+    # 되돌리기 전에 프로세스가 끝난 상황: 저널과 반쪽 산출물이 남는다.
+    with monkeypatch.context() as patch:
+        _fail_replace_once(patch, "chunk_manifest.json")
+
+        def crash(entries):
+            raise OSError("되돌리기 전에 종료")
+
+        patch.setattr(manifest_module, "_rollback", crash)
+        with pytest.raises(OSError):
+            build_chunks(config, ws.dataset_info)
+    assert chunk_path.exists()
+    assert not Path(config["chunking"]["manifest_path"]).exists()
+    assert list(chunk_path.parent.glob(".staged_commit.*.json"))
+
+    result = build_chunks(config, ws.dataset_info)
+    assert result["chunk_qrels_status"] == "ready"
+    assert _leftovers(chunk_path.parent, Path(config["evaluation"]["chunk_qrels_path"]).parent) == []
+
+
+# ---------------------------------------------------------------------------
+# 재검토 P3: section 청킹에서 첫 제목 앞의 본문을 버리지 않는다
+# ---------------------------------------------------------------------------
+PREAMBLE_TEXT = "만 19세부터 34세까지만 신청 가능합니다.\n지원 내용: 매월 20만원 지원"
+
+
+def _section_chunks(text: str) -> list[dict]:
+    return generate_chunks(
+        [{"document_id": "d1", "title": "청년 지원", "retrieval_text": text}],
+        version="section_test_v1",
+        strategy="section",
+        size=40,
+        overlap=5,
+        unit="characters",
+        target_field="retrieval_text",
+    )
+
+
+def _assert_source_covered(text: str, chunks: list[dict]) -> None:
+    covered = set()
+    for chunk in chunks:
+        covered.update(range(chunk["start_char"], chunk["end_char"]))
+    missing = [i for i, char in enumerate(text) if not char.isspace() and i not in covered]
+    assert missing == [], text[min(missing):]
+    for line in text.splitlines():
+        assert any(line.split(":")[-1].strip() in chunk["text"] for chunk in chunks), line
+
+
+@pytest.mark.parametrize(
+    "text",
+    [
+        PREAMBLE_TEXT,
+        "자격 요건: 무주택 청년\n지원 내용: 매월 20만원 지원",
+        "제목 없이 설명만 있는 정책 문서입니다.",
+    ],
+    ids=["leading_sentence", "unknown_heading", "no_heading"],
+)
+def test_section_chunks_keep_text_before_first_heading(text: str) -> None:
+    chunks = _section_chunks(text)
+    _assert_source_covered(text, chunks)
+    assert chunks[0]["section_index"] == 0
+    assert len({chunk["chunk_id"] for chunk in chunks}) == len(chunks)
+
+
+def test_section_chunks_starting_with_heading_are_unchanged() -> None:
+    chunks = _section_chunks(TEXT_1)
+    _assert_source_covered(TEXT_1, chunks)
+    assert [chunk["section_slug"] for chunk in chunks] == ["title", "application_method", "documents"]
+    assert chunks[0]["chunk_id"] == "d1__sec_00_title__chunk_000"
+    assert chunk_id_scheme("section") == "section_heading_v2"
+
+
+def test_coverage_validation_detects_dropped_text(tmp_path: Path) -> None:
+    documents = tmp_path / "documents.jsonl"
+    chunks_path = tmp_path / "chunks.jsonl"
+    write_jsonl(documents, [{"document_id": "d1", "retrieval_text": PREAMBLE_TEXT}])
+    start = PREAMBLE_TEXT.index("지원 내용")
+    body = PREAMBLE_TEXT[start:]
+    write_jsonl(
+        chunks_path,
+        [{"chunk_id": "d1__0", "document_id": "d1", "chunk_index": 0, "text": body,
+          "start_char": start, "end_char": len(PREAMBLE_TEXT)}],
+    )
+    with pytest.raises(ValueError, match="포함되지 않은 문서"):
+        validate_chunks(documents, chunks_path, chunk_size=40, overlap=5,
+                        strict_max_length=False, coverage_target_field="retrieval_text")
+
+
+def test_preamble_evidence_maps_to_chunk_end_to_end(ws: Workspace) -> None:
+    write_jsonl(
+        ws.documents,
+        [
+            {"document_id": "policy_001", "title": "청년 월세 지원", "retrieval_text": PREAMBLE_TEXT},
+            {"document_id": "policy_002", "title": "청년 일자리 지원", "retrieval_text": TEXT_2},
+        ],
+    )
+    ws.dataset_info["sha256"] = sha(ws.documents)
+    write_jsonl(ws.document_qrels, _evidence_rows({"evidence_text": "만 19세부터 34세까지만"}))
+    config = ws.load(**generate_overrides(version="section_heading_v2_40_ov5", strategy="section"))
+
+    chunk_info = build_chunks(config, ws.dataset_info)
+    assert chunk_info["chunk_qrels_status"] == "ready"
+    answer = next(r for r in read_jsonl(Path(chunk_info["chunk_qrels_path"])) if r["query_id"] == "q001")
+    assert "__sec_00_preamble__" in answer["chunk_id"]

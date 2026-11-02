@@ -23,7 +23,9 @@
 | 상황 | 동작 |
 |---|---|
 | 확정본 있음 + 메타 있음 | 메타의 `chunking_version`·`chunk_sha256`이 현재 청크와 다르면 파일을 그대로 두고 중단한다. 같으면 ID를 검증하고 사용한다. 확정본 해시가 메타와 다르면(사람이 수정함) 메타만 `reviewed`로 갱신한다. |
-| 확정본 있음 + 메타 없음 | 검증을 통과하면 메타만 만든다. reuse 모드는 `legacy_bootstrap`, generate 모드는 `reviewed`로 기록한다. |
+| 확정본 있음 + 메타의 원본 qrels 해시가 현재와 다름 | 정답 근거가 바뀐 것이다. 확정본과 메타를 그대로 두고 `review_required`(`review_status=source_changed`)를 반환한다. 검수 파일에 질문별 `confirmed_chunk_ids`와 `candidate_chunk_ids`를 나란히 기록한다. 예외: 사람이 고치지 않은 `auto_ready` 확정본을 다시 매핑한 결과가 완전히 같으면 메타의 원본 해시만 갱신하고 진행한다. |
+| 확정본 있음 + 메타에 원본 해시가 있는데 원본 qrels 파일이 없음 | 변경 여부를 확인할 수 없으므로 중단한다. |
+| 확정본 있음 + 메타 없음 | 검증을 통과하면 메타만 만든다. reuse 모드는 `legacy_bootstrap`, generate 모드는 `reviewed`로 기록한다. generate 모드는 이때의 원본 qrels 해시도 기록한다. |
 | 확정본이 비어 있음 | 중단한다. 비어 있는 확정본으로 평가하지 않는다. |
 | 확정본 없음 + reuse 모드 | `FileNotFoundError` |
 | 확정본 없음 + generate + 전부 근거 매핑 | 확정본과 메타(`auto_ready`)를 만든다. |
@@ -45,7 +47,13 @@
 1. `qrels_chunk_review_required.jsonl`과 `qrels_chunk.candidates.jsonl`을 확인한다.
 2. 정답 청크를 정해 `qrels_chunk.jsonl`에 저장한다. 행 형식은 `query_id`, `document_id`, `chunk_id`, `relevance`이고, 필요하면 `matched_section`과 `chunking_version`도 넣는다.
 3. 같은 설정으로 다시 실행한다. 메타가 `reviewed`로 기록되고, 이후 재실행에서도 파일은 바뀌지 않는다.
-4. 자동 결과로 다시 시작하려면 새 `chunking.version` 또는 새 경로를 쓴다. 기존 확정본을 덮어쓰는 옵션은 없다.
+4. 원본 문서 qrels가 바뀌어 `source_changed`로 멈췄다면, 검수 파일을 보고 `qrels_chunk.jsonl`을 필요한 만큼 고친 뒤 승인을 기록한다. 확정본 내용은 바꾸지 않고 메타만 현재 청크·원본 qrels 기준 `reviewed`로 갱신한다.
+
+   ```
+   python -m src.chunking.build_chunk_qrels approve --config configs/experiments/<실험>.yaml
+   ```
+
+5. 자동 결과로 다시 시작하려면 새 `chunking.version` 또는 새 경로를 쓴다. 기존 확정본을 덮어쓰는 옵션은 없다.
 
 ## 단독 실행 함수
 
