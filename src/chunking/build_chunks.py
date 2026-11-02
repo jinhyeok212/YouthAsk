@@ -16,6 +16,7 @@ from src.chunking.manifest import (
     project_path,
     read_json,
     read_jsonl,
+    recover_interrupted_commits,
     sha256_file,
     utc_now_iso,
     write_json,
@@ -65,7 +66,7 @@ def _reuse_existing_chunks(
     signature = chunk_signature(config, dataset_info)
     chunk_sha = sha256_file(chunk_path)
 
-    staged = StagedOutputs()
+    staged = StagedOutputs(journal_dir=manifest_path.parent)
     try:
         if manifest_path.exists():
             manifest = read_json(manifest_path)
@@ -152,7 +153,7 @@ def _generate_or_reuse_generated_chunks(
     document_qrels_path = project_path(config["evaluation"]["document_qrels_path"])
     guard_partial_outputs(manifest_path, chunk_path)
 
-    staged = StagedOutputs()
+    staged = StagedOutputs(journal_dir=manifest_path.parent)
     try:
         reused = manifest_path.exists()
         if reused:
@@ -183,6 +184,7 @@ def _generate_or_reuse_generated_chunks(
             chunk_size=size,
             overlap=overlap,
             strict_max_length=strategy == "fixed",
+            coverage_target_field=str(chunking["target_field"]),
         )
         chunk_sha = sha256_file(chunk_file)
 
@@ -238,6 +240,8 @@ def build_chunks(config: dict[str, Any], dataset_info: dict[str, Any]) -> dict[s
     mode = chunking_mode(config)
     document_path = project_path(dataset_info.get("document_path") or config["dataset"]["document_path"])
     chunk_path, manifest_path, chunk_qrels_path = configured_chunk_paths(config)
+    # 이전 실행이 파일 반영 도중 끝났다면 부분 산출물 검사보다 먼저 되돌린다.
+    recover_interrupted_commits(manifest_path.parent)
 
     prepare = _reuse_existing_chunks if mode == "reuse" else _generate_or_reuse_generated_chunks
     prepared = prepare(

@@ -199,16 +199,23 @@ def build_manifest(
     }
 
 
+COMMIT_JOURNAL_GLOB = ".staged_commit.*.json"
+
+
 class StagedOutputs:
     """최종 경로 옆 임시 파일에 먼저 쓰고, 검증이 끝나면 한꺼번에 반영한다.
 
     같은 폴더 안 os.replace이므로 파일 단위 교체는 원자적이다.
     commit 전에 실패하면 이번 실행이 만든 임시 파일만 지운다.
+    commit 도중 실패하면 이미 반영한 파일을 되돌린다. 기존 파일은 .bak으로
+    옮겨 두었다가 복원하고, 이번 실행이 새로 만든 파일만 지운다.
+    되돌리기 전에 프로세스가 끝나도 journal_dir의 저널로 다음 실행에서 복구한다.
     """
 
-    def __init__(self) -> None:
+    def __init__(self, journal_dir: Path | None = None) -> None:
         self._token = uuid4().hex[:8]
         self._staged: list[tuple[Path, Path]] = []
+        self._journal_dir = journal_dir
 
     def path_for(self, final_path: Path) -> Path:
         final_path.parent.mkdir(parents=True, exist_ok=True)
@@ -218,11 +225,97 @@ class StagedOutputs:
 
     def commit(self) -> None:
         # 등록 순서대로 반영한다. manifest를 마지막에 등록해 완료 표시로 쓴다.
-        for temp_path, final_path in self._staged:
-            os.replace(temp_path, final_path)
+        entries = [
+            {
+                "temp": str(temp_path),
+                "final": str(final_path),
+                "backup": (
+                    str(final_path.with_name(f".{final_path.name}.{self._token}.bak"))
+                    if final_path.exists()
+                    else None
+                ),
+            }
+            for temp_path, final_path in self._staged
+        ]
+        journal_dir = self._journal_dir or (self._staged[0][1].parent if self._staged else None)
+        journal_path = journal_dir / f".staged_commit.{self._token}.json" if journal_dir else None
+        if journal_path is not None:
+            _write_journal(journal_path, "applying", entries)
+
+        try:
+            for entry in entries:
+                if entry["backup"]:
+                    os.replace(entry["final"], entry["backup"])
+                os.replace(entry["temp"], entry["final"])
+        except BaseException:
+            # 되돌리기도 실패하면 저널이 남아 다음 실행에서 복구된다.
+            _rollback(entries)
+            if journal_path is not None:
+                journal_path.unlink(missing_ok=True)
+            raise
+
+        if journal_path is not None:
+            _write_journal(journal_path, "committed", entries)
+        _discard_backups(entries)
+        if journal_path is not None:
+            journal_path.unlink(missing_ok=True)
         self._staged.clear()
 
     def cleanup(self) -> None:
         for temp_path, _ in self._staged:
             temp_path.unlink(missing_ok=True)
         self._staged.clear()
+
+
+def _write_journal(path: Path, state: str, entries: list[dict[str, Any]]) -> None:
+    temp_path = path.with_name(f"{path.name}.tmp")
+    write_json(temp_path, {"state": state, "entries": entries, "updated_at_utc": utc_now_iso()})
+    os.replace(temp_path, path)
+
+
+def _rollback(entries: list[dict[str, Any]]) -> None:
+    """반영 순서의 역순으로 되돌린다. 아직 반영되지 않은 항목은 그대로 둔다."""
+    for entry in reversed(entries):
+        final_path = Path(entry["final"])
+        if entry["backup"]:
+            backup_path = Path(entry["backup"])
+            if backup_path.exists():
+                os.replace(backup_path, final_path)
+        else:
+            # commit 시작 시 없던 파일: 이번 실행이 만든 것이므로 지운다.
+            final_path.unlink(missing_ok=True)
+        Path(entry["temp"]).unlink(missing_ok=True)
+
+
+def _discard_backups(entries: list[dict[str, Any]]) -> None:
+    for entry in entries:
+        if entry["backup"]:
+            Path(entry["backup"]).unlink(missing_ok=True)
+        Path(entry["temp"]).unlink(missing_ok=True)
+
+
+def recover_interrupted_commits(journal_dir: Path) -> list[str]:
+    """이전 실행이 commit 도중 끝나 남긴 저널을 처리한다.
+
+    applying 상태면 반영 전 상태로 되돌리고, committed 상태면 남은 백업만 지운다.
+    처리한 저널 경로 목록을 반환한다.
+    """
+    if not journal_dir.exists():
+        return []
+    recovered: list[str] = []
+    for journal_path in sorted(journal_dir.glob(COMMIT_JOURNAL_GLOB)):
+        journal = read_json(journal_path)
+        entries = journal.get("entries") or []
+        try:
+            if journal.get("state") == "committed":
+                _discard_backups(entries)
+            else:
+                _rollback(entries)
+        except OSError as e:
+            raise RuntimeError(
+                "이전 실행의 중단된 파일 반영을 복구하지 못했습니다. "
+                f"파일 잠금을 해제한 뒤 다시 실행하세요: journal={journal_path}"
+            ) from e
+        journal_path.unlink(missing_ok=True)
+        recovered.append(str(journal_path))
+    return recovered
