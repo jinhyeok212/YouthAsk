@@ -23,11 +23,14 @@ def validate_chunks(
     overlap: int,
     strict_max_length: bool = True,
     require_full_coverage: bool = True,
+    coverage_target_field: str | None = None,
 ) -> dict[str, Any]:
     """Validate chunk artifacts before embedding/indexing stages consume them.
 
     require_full_coverage=False는 기존 검수 청크(reuse 모드)처럼 일부 문서만
     청크로 만든 산출물을 등록할 때 사용한다. main의 기존 검증 범위와 같다.
+    coverage_target_field를 주면 원문(해당 필드)의 공백이 아닌 문자가 모두
+    어떤 청크의 start_char~end_char 범위에 들어가는지 확인한다(본문 유실 방지).
     """
     documents_path = Path(documents_path)
     chunks_path = Path(chunks_path)
@@ -113,6 +116,15 @@ def validate_chunks(
     if missing_chunk_document_ids and require_full_coverage:
         errors.append(f"chunk가 생성되지 않은 document_id가 있습니다: {missing_chunk_document_ids[:5]}")
 
+    uncovered_document_ids: list[str] = []
+    if coverage_target_field:
+        uncovered_document_ids = _uncovered_document_ids(documents, chunks, coverage_target_field)
+        if uncovered_document_ids:
+            errors.append(
+                f"원문 {coverage_target_field}의 일부가 어떤 chunk에도 포함되지 않은 문서가 "
+                f"{len(uncovered_document_ids)}개 있습니다: {uncovered_document_ids[:5]}"
+            )
+
     if errors:
         raise ValueError("청킹 검증 실패:\n- " + "\n- ".join(errors))
 
@@ -125,5 +137,32 @@ def validate_chunks(
         "missing_document_id_count": missing_document_id_count,
         "missing_chunk_document_id_count": len(missing_chunk_document_ids),
         "invalid_order_count": invalid_order_count,
+        "uncovered_document_count": len(uncovered_document_ids),
     }
+
+
+def _uncovered_document_ids(
+    documents: list[dict[str, Any]],
+    chunks: list[dict[str, Any]],
+    target_field: str,
+) -> list[str]:
+    spans_by_document: dict[str, list[tuple[int, int]]] = {}
+    for chunk in chunks:
+        try:
+            span = (int(chunk["start_char"]), int(chunk["end_char"]))
+        except (KeyError, TypeError, ValueError):
+            continue
+        spans_by_document.setdefault(str(chunk.get("document_id") or "").strip(), []).append(span)
+
+    uncovered: list[str] = []
+    for document in documents:
+        did = _document_id(document)
+        text = str(document.get(target_field) or "")
+        covered = [False] * len(text)
+        for start, end in spans_by_document.get(did, []):
+            for position in range(max(0, start), min(end, len(text))):
+                covered[position] = True
+        if any(not covered[i] and not char.isspace() for i, char in enumerate(text)):
+            uncovered.append(did)
+    return sorted(uncovered)
 

@@ -56,9 +56,10 @@ SUPPORTED_STRATEGIES = ("fixed", "section")
 # chunk_id 생성 규칙. 규칙이 바뀌면 같은 version이라도 다른 청크이므로
 # generate 모드 signature에 포함해 기존 산출물과 섞이지 않게 한다.
 # 기존 C2 산출물(<doc>__overview__000)은 이 생성기가 만든 것이 아니다.
+# section_heading_v2: 첫 제목 앞 본문을 sec_00_preamble로 보존(뒤 section 번호가 밀림).
 CHUNK_ID_SCHEMES = {
     "fixed": "fixed_char_v1",
-    "section": "section_heading_v1",
+    "section": "section_heading_v2",
 }
 
 
@@ -156,6 +157,21 @@ def parse_sections(text: str) -> list[dict[str, Any]]:
         ]
 
     sections: list[dict[str, Any]] = []
+    # 첫 제목 앞의 본문(일반 설명문, 목록에 없는 제목 등)도 버리지 않는다.
+    preamble = text[: matches[0].start()]
+    if preamble.strip():
+        leading = len(preamble) - len(preamble.lstrip())
+        sections.append(
+            {
+                "section_index": 0,
+                "section_name": "본문",
+                "section_slug": "preamble",
+                "section_text": preamble.strip(),
+                "start_char": leading,
+                "end_char": len(preamble),
+            }
+        )
+    offset = len(sections)
     for index, match in enumerate(matches):
         start = match.start()
         end = matches[index + 1].start() if index + 1 < len(matches) else len(text)
@@ -165,7 +181,7 @@ def parse_sections(text: str) -> list[dict[str, Any]]:
             continue
         sections.append(
             {
-                "section_index": index,
+                "section_index": index + offset,
                 "section_name": label,
                 "section_slug": SECTION_SLUGS.get(label, "section"),
                 "section_text": section_text,
