@@ -1,0 +1,61 @@
+{
+  "dataset_name": "Ontong Youth MVP Evaluation Questions",
+  "dataset_version": "ontong_youth_eval_questions_v2_final_47",
+  "created_at": "2026-08-24T21:20:17.211047+09:00",
+  "inputs": {
+    "documents": "C:\\말똥가리\\data\\processed\\ontong_youth_mvp_400_documents\\documents.jsonl",
+    "adjudicated_standardized": "C:\\말똥가리\\data\\processed\\ontong_youth_eval_questions_v2_refined\\eval_question_candidates_review_v2_refined_adjudicated_standardized.csv",
+    "repair_claude_labeled": "C:\\말똥가리\\data\\processed\\ontong_youth_eval_questions_v2_repaired\\eval_question_repair_candidates_claude_labeled.csv"
+  },
+  "counts": {
+    "eval_questions": 47,
+    "qrels_rows": 50,
+    "original_v2_label1": 14,
+    "repair_label1": 25,
+    "repair_label2_resolved": 8,
+    "multi_qrels_queries": 3
+  },
+  "distributions": {
+    "question_type": {
+      "specific_policy_search": 9,
+      "eligibility": 7,
+      "application_period": 7,
+      "application_method": 10,
+      "support_content": 8,
+      "required_documents": 6
+    },
+    "primary_category": {
+      "일자리": 19,
+      "복지문화": 8,
+      "주거": 3,
+      "교육": 10,
+      "참여권리": 7
+    },
+    "resolution_action": {
+      "repair_label1_accepted": 25,
+      "question_refined": 4,
+      "multi_qrels_added": 3,
+      "answer_document_reassigned": 1,
+      "accepted_without_change": 14
+    }
+  },
+  "validation": {
+    "duplicate_query_id": 0,
+    "blank_query": 0,
+    "missing_ground_truth_document_ids": [],
+    "blank_reference_answer": 0
+  },
+  "notes": [
+    "This creates evaluation questions and document-level qrels only.",
+    "No chunking, embedding, Chroma indexing, or retrieval execution is performed.",
+    "ground_truth_chunk_ids must be derived later after chunking."
+  ],
+  "output_files": {
+    "eval_questions_jsonl": "C:\\말똥가리\\data\\processed\\ontong_youth_eval_questions_v2_final_47\\eval_questions.jsonl",
+    "eval_questions_csv": "C:\\말똥가리\\data\\processed\\ontong_youth_eval_questions_v2_final_47\\eval_questions.csv",
+    "qrels_jsonl": "C:\\말똥가리\\data\\processed\\ontong_youth_eval_questions_v2_final_47\\qrels.jsonl",
+    "qrels_csv": "C:\\말똥가리\\data\\processed\\ontong_youth_eval_questions_v2_final_47\\qrels.csv",
+    "resolved_label2_actions_csv": "C:\\말똥가리\\data\\processed\\ontong_youth_eval_questions_v2_final_47\\resolved_label2_actions.csv",
+    "manifest": "C:\\말똥가리\\data\\processed\\ontong_youth_eval_questions_v2_final_47\\eval_questions_manifest.json"
+  }
+}

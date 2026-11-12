@@ -247,6 +247,16 @@ def run_batch_retrieval(
                 evaluation_max_k=top_k,
             ),
         )
+        warmup_count = retrieval.get("warmup_count", 0)
+        if isinstance(warmup_count, bool) or not isinstance(warmup_count, int) or warmup_count < 0:
+            raise ValueError("config.retrieval.warmup_count must be a non-negative integer")
+        for warmup_index in range(warmup_count):
+            question = questions[warmup_index % len(questions)]
+            retriever.retrieve(
+                query_id=f"__warmup_{warmup_index + 1}",
+                query=question.query,
+                top_k=top_k,
+            )
         results = list(_iter_retrieval_results(questions, retriever, top_k))
     finally:
         close = getattr(client, "close", None)

@@ -1,0 +1,5 @@
+experiment_id,index_reused,warmup_count,question_count,average_ms,p95_ms,max_ms,runtime_errors,document_hit_at_5,document_mrr_at_5,chunk_hit_at_5,chunk_mrr_at_5
+B01-20261104-R2,true,1,47,660.103,783.300,1272.418,0,0.872340,0.744681,0.638298,0.457092
+B01-20261104-R3,true,1,47,595.697,674.852,745.539,0,0.872340,0.744681,0.638298,0.457092
+B01-20261104-R4,true,1,47,606.523,779.749,945.369,0,0.872340,0.744681,0.638298,0.457092
+representative_median,,,47,606.523,779.749,,0,0.872340,0.744681,0.638298,0.457092

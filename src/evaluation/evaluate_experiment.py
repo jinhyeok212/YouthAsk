@@ -98,6 +98,7 @@ def evaluate_experiment(config: dict, retrieval_results: list[dict]) -> dict:
         sum(latencies) / len(latencies) if latencies else 0.0
     )
     summary["p95_retrieval_latency_ms"] = _percentile(latencies, 0.95)
+    summary["max_retrieval_latency_ms"] = max(latencies) if latencies else 0.0
     summary["retrieval_failure_count"] = len(runtime_failures)
     summary["evaluation_query_count"] = n
     summary["evaluation_ks"] = ks

@@ -1,0 +1,8 @@
+{
+  "status": "reviewed",
+  "chunking_version": "section_heading_800_ov120_v1",
+  "chunk_sha256": "f63102c3774ceb8130949bfd2f7ad27a46e6fd792de532410e84007d298d689e",
+  "qrels_sha256": "545c87d777fccf3cb15030952ddeeebd40f43b75d413a5357cbcb83f8cebec0a",
+  "source_document_qrels_sha256": "600f879d4fb623e4c4a21f02de30ee4a5f63bbd88cdc239df1324401b2a37bb9",
+  "updated_at_utc": "2026-11-04T11:18:32.160238+00:00"
+}

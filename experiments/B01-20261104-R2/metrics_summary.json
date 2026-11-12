@@ -1,0 +1,20 @@
+{
+  "document_hit_at_1": 0.6595744680851063,
+  "document_hit_at_3": 0.8297872340425532,
+  "document_hit_at_5": 0.8723404255319149,
+  "document_mrr": 0.74468085106383,
+  "chunk_hit_at_1": 0.3404255319148936,
+  "chunk_hit_at_3": 0.5319148936170213,
+  "chunk_hit_at_5": 0.6382978723404256,
+  "chunk_mrr": 0.4570921985815603,
+  "average_retrieval_latency_ms": 660.1034808666149,
+  "p95_retrieval_latency_ms": 783.3000002428889,
+  "max_retrieval_latency_ms": 1272.4178000353277,
+  "retrieval_failure_count": 0,
+  "evaluation_query_count": 47,
+  "evaluation_ks": [
+    1,
+    3,
+    5
+  ]
+}
