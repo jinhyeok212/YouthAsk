@@ -1,0 +1,6 @@
+﻿query_id,failure_type,document_first_relevant_rank,chunk_first_relevant_rank,retrieval_latency_ms,runtime_error
+oy_eval_repair_q0007,DOCUMENT_MISS_TOP5,,,661.1537002027035,
+oy_eval_repair_q0056,LOW_RANK_RELEVANT_CHUNK,5,5,266.2727003917098,
+oy_eval_v2r_q0078,LOW_RANK_RELEVANT_CHUNK,4,4,412.2529998421669,
+oy_eval_v2r_q0086,DOCUMENT_HIT_BUT_CHUNK_MISS_TOP5,2,,433.6431995034218,
+oy_eval_v2r_q0090,DOCUMENT_MISS_TOP5,,,417.6986003294587,

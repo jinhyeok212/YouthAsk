@@ -1,0 +1,72 @@
+{
+  "experiment_id": "C01-20261112-R2",
+  "experiment_name": "full-dataset-kure-fixed-800-overlap120-repeat-2",
+  "base_experiment_id": "C01-20261112-R1",
+  "status": "SUCCESS",
+  "schema_version": "1.1",
+  "dataset": {
+    "document_path": "data/processed/ontong_youth_full_v1/documents.jsonl",
+    "manifest_path": "data/processed/ontong_youth_full_v1/dataset_manifest.json",
+    "quality_report_path": "data/processed/ontong_youth_full_v1/data_quality_report.csv",
+    "document_count": 2728,
+    "sha256": "8688055b4553c79e9390e31831b5fefbef00925f24fb20af983a7ca552914a48",
+    "dataset_version": "ontong_youth_full_v1",
+    "preprocessing_version": "prep_v1"
+  },
+  "chunking": {
+    "chunk_path": "C:\\Users\\home\\Desktop\\PJ\\RAG-Project\\data\\processed\\ontong_youth_full_v1\\chunks\\fixed_800_ov120_v1\\chunks.jsonl",
+    "manifest_path": "C:\\Users\\home\\Desktop\\PJ\\RAG-Project\\data\\processed\\ontong_youth_full_v1\\chunks\\fixed_800_ov120_v1\\chunk_manifest.json",
+    "chunk_count": 3462,
+    "chunk_qrels_path": "C:\\Users\\home\\Desktop\\PJ\\RAG-Project\\data\\evaluation\\eval_full_v1\\chunk_qrels\\fixed_800_ov120_v1\\qrels_chunk.jsonl",
+    "chunk_qrels_status": "ready",
+    "chunk_qrels_review_status": "reviewed",
+    "chunk_qrels_candidates_path": "C:\\Users\\home\\Desktop\\PJ\\RAG-Project\\data\\evaluation\\eval_full_v1\\chunk_qrels\\fixed_800_ov120_v1\\qrels_chunk.candidates.jsonl",
+    "chunk_qrels_review_required_path": "C:\\Users\\home\\Desktop\\PJ\\RAG-Project\\data\\evaluation\\eval_full_v1\\chunk_qrels\\fixed_800_ov120_v1\\qrels_chunk_review_required.jsonl",
+    "chunk_qrels_meta_path": "C:\\Users\\home\\Desktop\\PJ\\RAG-Project\\data\\evaluation\\eval_full_v1\\chunk_qrels\\fixed_800_ov120_v1\\qrels_chunk.meta.json",
+    "chunk_qrels_mapped_row_count": 58,
+    "chunk_qrels_review_required_count": 0,
+    "chunk_sha256": "d202b62d263ff80f4fa89a62127ce9276a153f7873ad5eab169a2a5f2ce35046",
+    "dataset_sha256": "8688055b4553c79e9390e31831b5fefbef00925f24fb20af983a7ca552914a48",
+    "chunking_mode": "generate",
+    "chunks_reused": true
+  },
+  "index": {
+    "index_version": "index_c01_kure_fixed800_ov120_v1",
+    "db_path": "C:\\Users\\home\\Desktop\\PJ\\RAG-Project\\indexes\\chroma\\index_c01_kure_fixed800_ov120_v1",
+    "collection_name": "ontong_youth_c01_kure_fixed800_ov120_v1",
+    "reused": true,
+    "manifest_path": "C:\\Users\\home\\Desktop\\PJ\\RAG-Project\\indexes\\chroma\\index_c01_kure_fixed800_ov120_v1\\ontong_youth_c01_kure_fixed800_ov120_v1__manifest.json",
+    "index_count": 3462,
+    "build_time_seconds": 0.0
+  },
+  "embedding": {
+    "model": "nlpai-lab/KURE-v1",
+    "revision": "8b418a58414668e75532ed045c22d9ca018ae2b2",
+    "dimension": 1024,
+    "normalize": true,
+    "batch_size": 32,
+    "device": "auto"
+  },
+  "retrieval": {
+    "evaluation_max_k": 5,
+    "context_top_k": 3,
+    "warmup_count": 1
+  },
+  "evaluation": {
+    "version": "ontong_youth_eval_questions_v2_final_47",
+    "ks": [
+      1,
+      3,
+      5
+    ],
+    "validation": {
+      "question_count": 47,
+      "document_qrels_query_count": 47,
+      "chunk_qrels_query_count": 47,
+      "chunk_qrels_row_count": 58,
+      "status": "VALID"
+    }
+  },
+  "git_commit": "a5a00a644d111ddde38c1d011daab39c85ca3dd6",
+  "created_at_utc": "2026-11-12T11:55:58.052562+00:00"
+}

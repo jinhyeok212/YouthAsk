@@ -1,0 +1,5 @@
+condition,chunking,size,overlap,chunk_count,representative_average_ms,average_reduction_vs_baseline_pct,representative_p95_ms,p95_reduction_vs_baseline_pct,max_observed_r2_r4_ms,document_hit_at_1,document_hit_at_3,document_hit_at_5,document_mrr_at_5,chunk_hit_at_1,chunk_hit_at_3,chunk_hit_at_5,chunk_mrr_at_5,ranking_mismatch_query_count,retrieval_error_count,validation
+Baseline,section,800,120,25829,606.523,0.00,779.749,0.00,1272.418,0.659574,0.829787,0.872340,0.744681,0.340426,0.531915,0.638298,0.457092,0,0,PASS
+C01,fixed,800,120,3462,345.042,43.11,482.433,38.13,899.628,0.744681,0.914894,0.957447,0.828723,0.702128,0.893617,0.936170,0.796809,0,0,PASS
+C02,section,500,120,26059,436.888,27.97,539.234,30.85,1021.844,0.659574,0.829787,0.872340,0.744681,0.361702,0.531915,0.638298,0.468794,0,0,PASS
+C03,section,800,0,25825,437.951,27.79,489.204,37.26,659.198,0.659574,0.829787,0.872340,0.744681,0.340426,0.531915,0.638298,0.457092,0,0,PASS

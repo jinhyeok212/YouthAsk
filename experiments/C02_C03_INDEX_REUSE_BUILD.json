@@ -1,0 +1,16 @@
+[
+  {
+    "condition": "C02",
+    "index_count": 26059,
+    "reused_count": 25533,
+    "encoded_count": 526,
+    "build_time_seconds": 1290.8279
+  },
+  {
+    "condition": "C03",
+    "index_count": 25825,
+    "reused_count": 25774,
+    "encoded_count": 51,
+    "build_time_seconds": 247.1902
+  }
+]

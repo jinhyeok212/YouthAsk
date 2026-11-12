@@ -1,0 +1,32 @@
+{
+  "manifest_schema_version": "2.0",
+  "index_version": "index_c03_kure_section800_ov0_v1",
+  "db_path": "C:\\Users\\home\\Desktop\\PJ\\RAG-Project\\indexes\\chroma\\index_c03_kure_section800_ov0_v1",
+  "collection_name": "ontong_youth_c03_kure_section800_ov0_v1",
+  "signature": {
+    "index_version": "index_c03_kure_section800_ov0_v1",
+    "dataset_version": "ontong_youth_full_v1",
+    "preprocessing_version": "prep_v1",
+    "dataset_sha256": "8688055b4553c79e9390e31831b5fefbef00925f24fb20af983a7ca552914a48",
+    "chunking_version": "section_heading_800_ov0_v1",
+    "chunk_size": 800,
+    "chunk_overlap": 0,
+    "chunk_target_field": "retrieval_text",
+    "chunk_sha256": "2538ef75e62a211fb6cec9d3e2838ebeb9a308803bb53d9c504f867cfc47e6e5",
+    "chunk_count": 25825,
+    "embedding_model": "nlpai-lab/KURE-v1",
+    "embedding_revision": "8b418a58414668e75532ed045c22d9ca018ae2b2",
+    "embedding_dimension": 1024,
+    "embedding_normalize": true,
+    "distance_metric": "cosine"
+  },
+  "index_count": 25825,
+  "build_time_seconds": 247.1902,
+  "reused": false,
+  "embedding_reuse": {
+    "source_collection": "ontong_youth_b01_kure_section800_ov120_v1",
+    "source_chunk_version": "section_heading_800_ov120_v1",
+    "reused_identical_text_count": 25774,
+    "newly_encoded_count": 51
+  }
+}

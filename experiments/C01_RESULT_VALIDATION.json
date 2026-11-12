@@ -1,0 +1,1125 @@
+{
+  "valid": true,
+  "ranking_mismatch_query_count": 0,
+  "ranking_mismatch_query_ids": [],
+  "representative_average_ms": 345.0422488905965,
+  "representative_p95_ms": 482.43340011686087,
+  "runs": [
+    {
+      "experiment_id": "C01-20261112-R2",
+      "valid": true,
+      "errors": [],
+      "query_count": 47,
+      "top5_rank_rows_valid": true,
+      "missing_chunk_id_count": 0,
+      "invalid_condition_chunk_id_count": 0,
+      "chunk_document_mismatch_count": 0,
+      "question_latency_count": 47,
+      "average_retrieval_latency_ms": 310.60186807224727,
+      "p95_retrieval_latency_ms": 697.2107999026775,
+      "average_matches_summary": true,
+      "p95_matches_summary": true,
+      "runtime_error_count": 0,
+      "ranking_signature": {
+        "oy_eval_repair_q0007": [
+          "ontong_youth_20260325005400212265__chunk_001",
+          "ontong_youth_20260331005400212356__chunk_001",
+          "ontong_youth_20250901005400211541__chunk_000",
+          "ontong_youth_20260619005400213242__chunk_000",
+          "ontong_youth_20250724005400211490__chunk_000"
+        ],
+        "oy_eval_repair_q0009": [
+          "ontong_youth_20250220005400210475__chunk_000",
+          "ontong_youth_20250220005400210475__chunk_001",
+          "ontong_youth_20250116005400210314__chunk_000",
+          "ontong_youth_20250331005400210676__chunk_000",
+          "ontong_youth_20251219005400212033__chunk_000"
+        ],
+        "oy_eval_repair_q0012": [
+          "ontong_youth_20250227005400210568__chunk_000",
+          "ontong_youth_20260429005400212926__chunk_000",
+          "ontong_youth_20250305005400210594__chunk_000",
+          "ontong_youth_20260522005400213211__chunk_000",
+          "ontong_youth_20260420005400212772__chunk_000"
+        ],
+        "oy_eval_repair_q0021": [
+          "ontong_youth_20250909005400211682__chunk_000",
+          "ontong_youth_20250909005400211683__chunk_000",
+          "ontong_youth_20250908005400211673__chunk_000",
+          "ontong_youth_20250502005400210766__chunk_000",
+          "ontong_youth_20250724005400211490__chunk_000"
+        ],
+        "oy_eval_repair_q0024": [
+          "ontong_youth_20260402005400212380__chunk_000",
+          "ontong_youth_20250509005400210801__chunk_000",
+          "ontong_youth_20250507005400210785__chunk_000",
+          "ontong_youth_20250509005400210803__chunk_000",
+          "ontong_youth_20250501005400210745__chunk_000"
+        ],
+        "oy_eval_repair_q0027": [
+          "ontong_youth_20260313005400212130__chunk_000",
+          "ontong_youth_20260313005400212118__chunk_000",
+          "ontong_youth_20250829005400211537__chunk_000",
+          "ontong_youth_20260313005400212130__chunk_001",
+          "ontong_youth_20260619005400213242__chunk_000"
+        ],
+        "oy_eval_repair_q0030": [
+          "ontong_youth_20250529005400110881__chunk_000",
+          "ontong_youth_20260211005400112094__chunk_000",
+          "ontong_youth_20250112005400110167__chunk_000",
+          "ontong_youth_20260810005400113328__chunk_000",
+          "ontong_youth_20260610005400113229__chunk_000"
+        ],
+        "oy_eval_repair_q0032": [
+          "ontong_youth_20250612005400110914__chunk_001",
+          "ontong_youth_20250612005400110914__chunk_000",
+          "ontong_youth_20260311005400112111__chunk_000",
+          "ontong_youth_20250612005400110918__chunk_001",
+          "ontong_youth_20260311005400112111__chunk_001"
+        ],
+        "oy_eval_repair_q0033": [
+          "ontong_youth_20250331005400210678__chunk_000",
+          "ontong_youth_20260407005400212564__chunk_000",
+          "ontong_youth_20250331005400210678__chunk_001",
+          "ontong_youth_20260522005400213213__chunk_000",
+          "ontong_youth_20260407005400212564__chunk_001"
+        ],
+        "oy_eval_repair_q0034": [
+          "ontong_youth_20250618005400211047__chunk_000",
+          "ontong_youth_20260429005400212946__chunk_000",
+          "ontong_youth_20251230005400212052__chunk_000",
+          "ontong_youth_20250618005400211045__chunk_000",
+          "ontong_youth_20250620005400111087__chunk_000"
+        ],
+        "oy_eval_repair_q0035": [
+          "ontong_youth_20260407005400212567__chunk_000",
+          "ontong_youth_20260709005400213253__chunk_000",
+          "ontong_youth_20260722005400213274__chunk_000",
+          "ontong_youth_20260410005400212666__chunk_000",
+          "ontong_youth_20260408005400212630__chunk_000"
+        ],
+        "oy_eval_repair_q0037": [
+          "ontong_youth_20250316005400210640__chunk_002",
+          "ontong_youth_20250316005400210640__chunk_000",
+          "ontong_youth_20260305005400112100__chunk_000",
+          "ontong_youth_20250227005400210572__chunk_000",
+          "ontong_youth_20250718005400211459__chunk_000"
+        ],
+        "oy_eval_repair_q0038": [
+          "ontong_youth_20250403005400210687__chunk_000",
+          "ontong_youth_20260107005400212076__chunk_000",
+          "ontong_youth_20250121005400110344__chunk_000",
+          "ontong_youth_20250403005400210687__chunk_002",
+          "ontong_youth_20250121005400110344__chunk_001"
+        ],
+        "oy_eval_repair_q0039": [
+          "ontong_youth_20250119005400210339__chunk_000",
+          "ontong_youth_20260408005400212606__chunk_000",
+          "ontong_youth_20251124005400211941__chunk_000",
+          "ontong_youth_20250731005400211508__chunk_001",
+          "ontong_youth_20250516005400210831__chunk_000"
+        ],
+        "oy_eval_repair_q0042": [
+          "ontong_youth_20250904005400211641__chunk_000",
+          "ontong_youth_20251112005400211865__chunk_000",
+          "ontong_youth_20260504005400113077__chunk_000",
+          "ontong_youth_20251112005400211868__chunk_000",
+          "ontong_youth_20260504005400113114__chunk_000"
+        ],
+        "oy_eval_repair_q0043": [
+          "ontong_youth_20250711005400211195__chunk_000",
+          "ontong_youth_20260728005400213311__chunk_000",
+          "ontong_youth_20260407005400212554__chunk_000",
+          "ontong_youth_20260407005400212554__chunk_001",
+          "ontong_youth_20260429005400212920__chunk_000"
+        ],
+        "oy_eval_repair_q0045": [
+          "ontong_youth_20250904005400211645__chunk_000",
+          "ontong_youth_20250904005400211632__chunk_001",
+          "ontong_youth_20250904005400211622__chunk_000",
+          "ontong_youth_20250904005400211642__chunk_001",
+          "ontong_youth_20250904005400211623__chunk_000"
+        ],
+        "oy_eval_repair_q0047": [
+          "ontong_youth_20250723005400211484__chunk_000",
+          "ontong_youth_20250723005400211485__chunk_000",
+          "ontong_youth_20250723005400211478__chunk_000",
+          "ontong_youth_20250722005400211476__chunk_000",
+          "ontong_youth_20250716005400211320__chunk_000"
+        ],
+        "oy_eval_repair_q0054": [
+          "ontong_youth_20251231005400212065__chunk_000",
+          "ontong_youth_20250327005400210667__chunk_000",
+          "ontong_youth_20250515005400210826__chunk_000",
+          "ontong_youth_20251107005400211812__chunk_000",
+          "ontong_youth_20260429005400212947__chunk_000"
+        ],
+        "oy_eval_repair_q0056": [
+          "ontong_youth_20250903005400211612__chunk_001",
+          "ontong_youth_20250903005400211613__chunk_001",
+          "ontong_youth_20251231005400212061__chunk_000",
+          "ontong_youth_20250903005400111592__chunk_001",
+          "ontong_youth_20250113005400210184__chunk_000"
+        ],
+        "oy_eval_repair_q0066": [
+          "ontong_youth_20250903005400211613__chunk_000",
+          "ontong_youth_20250903005400211612__chunk_000",
+          "ontong_youth_20250904005400211622__chunk_000",
+          "ontong_youth_20250908005400211662__chunk_000",
+          "ontong_youth_20250227005400210570__chunk_000"
+        ],
+        "oy_eval_repair_q0072": [
+          "ontong_youth_20250114005400110236__chunk_000",
+          "ontong_youth_20250114005400110244__chunk_000",
+          "ontong_youth_20250613005400110927__chunk_000",
+          "ontong_youth_20250114005400110248__chunk_000",
+          "ontong_youth_20250908005400211667__chunk_000"
+        ],
+        "oy_eval_repair_q0073": [
+          "ontong_youth_20250316005400210639__chunk_000",
+          "ontong_youth_20250316005400210639__chunk_002",
+          "ontong_youth_20250316005400210639__chunk_001",
+          "ontong_youth_20250305005400110593__chunk_001",
+          "ontong_youth_20250316005400210621__chunk_001"
+        ],
+        "oy_eval_repair_q0074": [
+          "ontong_youth_20250113005400110192__chunk_000",
+          "ontong_youth_20260706005400213250__chunk_000",
+          "ontong_youth_20260504005400113102__chunk_000",
+          "ontong_youth_20250903005400211604__chunk_000",
+          "ontong_youth_20260504005400113117__chunk_000"
+        ],
+        "oy_eval_repair_q0075": [
+          "ontong_youth_20250619005400111066__chunk_000",
+          "ontong_youth_20250619005400111072__chunk_000",
+          "ontong_youth_20250619005400111072__chunk_001",
+          "ontong_youth_20250619005400111066__chunk_001",
+          "ontong_youth_20250619005400111070__chunk_002"
+        ],
+        "oy_eval_repair_q0076": [
+          "ontong_youth_20250114005400110248__chunk_000",
+          "ontong_youth_20250114005400110248__chunk_001",
+          "ontong_youth_20250114005400110244__chunk_000",
+          "ontong_youth_20250316005400210638__chunk_001",
+          "ontong_youth_20250114005400110236__chunk_000"
+        ],
+        "oy_eval_repair_q0077": [
+          "ontong_youth_20250710005400211177__chunk_000",
+          "ontong_youth_20260407005400212570__chunk_000",
+          "ontong_youth_20250710005400211177__chunk_001",
+          "ontong_youth_20250710005400211176__chunk_000",
+          "ontong_youth_20250710005400211176__chunk_001"
+        ],
+        "oy_eval_repair_q0080": [
+          "ontong_youth_20260408005400212626__chunk_000",
+          "ontong_youth_20260722005400213296__chunk_000",
+          "ontong_youth_20250428005400210727__chunk_000",
+          "ontong_youth_20260429005400212936__chunk_002",
+          "ontong_youth_20250331005400210676__chunk_000"
+        ],
+        "oy_eval_repair_q0082": [
+          "ontong_youth_20250619005400111070__chunk_000",
+          "ontong_youth_20250619005400111070__chunk_002",
+          "ontong_youth_20250619005400111070__chunk_001",
+          "ontong_youth_20250616005400110940__chunk_001",
+          "ontong_youth_20260420005400212772__chunk_001"
+        ],
+        "oy_eval_repair_q0085": [
+          "ontong_youth_20250619005400111072__chunk_001",
+          "ontong_youth_20250619005400111072__chunk_000",
+          "ontong_youth_20250619005400111070__chunk_001",
+          "ontong_youth_20250619005400111066__chunk_000",
+          "ontong_youth_20250619005400111066__chunk_001"
+        ],
+        "oy_eval_repair_q0089": [
+          "ontong_youth_20251231005400212069__chunk_000",
+          "ontong_youth_20250729005400211505__chunk_000",
+          "ontong_youth_20251231005400212058__chunk_000",
+          "ontong_youth_20260714005400113258__chunk_001",
+          "ontong_youth_20251230005400212053__chunk_000"
+        ],
+        "oy_eval_repair_q0099": [
+          "ontong_youth_20250904005400211649__chunk_000",
+          "ontong_youth_20250904005400211647__chunk_000",
+          "ontong_youth_20250904005400211646__chunk_000",
+          "ontong_youth_20250904005400211632__chunk_001",
+          "ontong_youth_20250221005400210533__chunk_000"
+        ],
+        "oy_eval_repair_q0100": [
+          "ontong_youth_20250114005400110230__chunk_000",
+          "ontong_youth_20250113005400110168__chunk_000",
+          "ontong_youth_20250620005400111084__chunk_001",
+          "ontong_youth_20260316005400112168__chunk_002",
+          "ontong_youth_20260408005400212623__chunk_001"
+        ],
+        "oy_eval_v2r_q0002": [
+          "ontong_youth_20250211005400210415__chunk_000",
+          "ontong_youth_20250430005400210732__chunk_000",
+          "ontong_youth_20250502005400110774__chunk_000",
+          "ontong_youth_20250430005400210739__chunk_000",
+          "ontong_youth_20250901005400211540__chunk_000"
+        ],
+        "oy_eval_v2r_q0003": [
+          "ontong_youth_20250430005400210741__chunk_000",
+          "ontong_youth_20250501005400210753__chunk_000",
+          "ontong_youth_20250502005400210781__chunk_001",
+          "ontong_youth_20250430005400210741__chunk_001",
+          "ontong_youth_20250430005400210736__chunk_000"
+        ],
+        "oy_eval_v2r_q0004": [
+          "ontong_youth_20260407005400212572__chunk_000",
+          "ontong_youth_20250331005400210675__chunk_000",
+          "ontong_youth_20250331005400210675__chunk_001",
+          "ontong_youth_20260408005400212598__chunk_000",
+          "ontong_youth_20260408005400212628__chunk_000"
+        ],
+        "oy_eval_v2r_q0005": [
+          "ontong_youth_20260513005400213204__chunk_000",
+          "ontong_youth_20250520005400210862__chunk_001",
+          "ontong_youth_20250515005400210823__chunk_000",
+          "ontong_youth_20250917005400211702__chunk_001",
+          "ontong_youth_20260513005400213198__chunk_000"
+        ],
+        "oy_eval_v2r_q0015": [
+          "ontong_youth_20250814005400211517__chunk_000",
+          "ontong_youth_20250814005400211517__chunk_001",
+          "ontong_youth_20250719005400211466__chunk_000",
+          "ontong_youth_20260107005400212072__chunk_000",
+          "ontong_youth_20260121005400212078__chunk_001"
+        ],
+        "oy_eval_v2r_q0017": [
+          "ontong_youth_20250822005400211521__chunk_000",
+          "ontong_youth_20240119005400200007__chunk_000",
+          "ontong_youth_20250729005400211499__chunk_000",
+          "ontong_youth_20260722005400213276__chunk_000",
+          "ontong_youth_20260708005400213251__chunk_000"
+        ],
+        "oy_eval_v2r_q0025": [
+          "ontong_youth_20251121005400211924__chunk_000",
+          "ontong_youth_20251120005400211906__chunk_000",
+          "ontong_youth_20251117005400211904__chunk_000",
+          "ontong_youth_20251121005400211921__chunk_001",
+          "ontong_youth_20251121005400211921__chunk_000"
+        ],
+        "oy_eval_v2r_q0026": [
+          "ontong_youth_20250507005400210785__chunk_000",
+          "ontong_youth_20250507005400210785__chunk_001",
+          "ontong_youth_20250509005400210803__chunk_000",
+          "ontong_youth_20250501005400210745__chunk_000",
+          "ontong_youth_20250509005400210801__chunk_000"
+        ],
+        "oy_eval_v2r_q0064": [
+          "ontong_youth_20260409005400212656__chunk_000",
+          "ontong_youth_20250715005400211238__chunk_000",
+          "ontong_youth_20260410005400212667__chunk_000",
+          "ontong_youth_20260413005400212693__chunk_000",
+          "ontong_youth_20250714005400111222__chunk_000"
+        ],
+        "oy_eval_v2r_q0078": [
+          "ontong_youth_20251112005400211858__chunk_000",
+          "ontong_youth_20260504005400113115__chunk_000",
+          "ontong_youth_20251214005400211987__chunk_000",
+          "ontong_youth_20260504005400113110__chunk_000",
+          "ontong_youth_20260504005400113113__chunk_000"
+        ],
+        "oy_eval_v2r_q0086": [
+          "ontong_youth_20250717005400211342__chunk_000",
+          "ontong_youth_20240708005400200012__chunk_002",
+          "ontong_youth_20260414005400212739__chunk_000",
+          "ontong_youth_20260414005400212741__chunk_000",
+          "ontong_youth_20260414005400212740__chunk_000"
+        ],
+        "oy_eval_v2r_q0090": [
+          "ontong_youth_20260406005400212412__chunk_002",
+          "ontong_youth_20260406005400212449__chunk_002",
+          "ontong_youth_20260506005400213155__chunk_002",
+          "ontong_youth_20260406005400212399__chunk_002",
+          "ontong_youth_20260724005400213303__chunk_002"
+        ],
+        "oy_eval_v2r_q0094": [
+          "ontong_youth_20250307005400210601__chunk_000",
+          "ontong_youth_20250307005400210601__chunk_001",
+          "ontong_youth_20250307005400210600__chunk_000",
+          "ontong_youth_20250307005400210600__chunk_001",
+          "ontong_youth_20250125005400210403__chunk_000"
+        ],
+        "oy_eval_v2r_q0098": [
+          "ontong_youth_20260421005400212821__chunk_000",
+          "ontong_youth_20260421005400212824__chunk_000",
+          "ontong_youth_20250328005400210669__chunk_000",
+          "ontong_youth_20260422005400212862__chunk_000",
+          "ontong_youth_20260413005400212718__chunk_000"
+        ]
+      },
+      "failure_counts": {
+        "DOCUMENT_HIT_BUT_CHUNK_MISS_TOP5": 1,
+        "DOCUMENT_MISS_TOP5": 2,
+        "LOW_RANK_RELEVANT_CHUNK": 2
+      },
+      "metrics_summary": {
+        "document_hit_at_1": 0.7446808510638298,
+        "document_hit_at_3": 0.9148936170212766,
+        "document_hit_at_5": 0.9574468085106383,
+        "document_mrr": 0.8287234042553193,
+        "chunk_hit_at_1": 0.7021276595744681,
+        "chunk_hit_at_3": 0.8936170212765957,
+        "chunk_hit_at_5": 0.9361702127659575,
+        "chunk_mrr": 0.796808510638298,
+        "average_retrieval_latency_ms": 310.60186807224727,
+        "p95_retrieval_latency_ms": 697.2107999026775,
+        "max_retrieval_latency_ms": 899.6283998712897,
+        "retrieval_failure_count": 0,
+        "evaluation_query_count": 47,
+        "evaluation_ks": [
+          1,
+          3,
+          5
+        ]
+      }
+    },
+    {
+      "experiment_id": "C01-20261112-R3",
+      "valid": true,
+      "errors": [],
+      "query_count": 47,
+      "top5_rank_rows_valid": true,
+      "missing_chunk_id_count": 0,
+      "invalid_condition_chunk_id_count": 0,
+      "chunk_document_mismatch_count": 0,
+      "question_latency_count": 47,
+      "average_retrieval_latency_ms": 394.39534687219145,
+      "p95_retrieval_latency_ms": 482.43340011686087,
+      "average_matches_summary": true,
+      "p95_matches_summary": true,
+      "runtime_error_count": 0,
+      "ranking_signature": {
+        "oy_eval_repair_q0007": [
+          "ontong_youth_20260325005400212265__chunk_001",
+          "ontong_youth_20260331005400212356__chunk_001",
+          "ontong_youth_20250901005400211541__chunk_000",
+          "ontong_youth_20260619005400213242__chunk_000",
+          "ontong_youth_20250724005400211490__chunk_000"
+        ],
+        "oy_eval_repair_q0009": [
+          "ontong_youth_20250220005400210475__chunk_000",
+          "ontong_youth_20250220005400210475__chunk_001",
+          "ontong_youth_20250116005400210314__chunk_000",
+          "ontong_youth_20250331005400210676__chunk_000",
+          "ontong_youth_20251219005400212033__chunk_000"
+        ],
+        "oy_eval_repair_q0012": [
+          "ontong_youth_20250227005400210568__chunk_000",
+          "ontong_youth_20260429005400212926__chunk_000",
+          "ontong_youth_20250305005400210594__chunk_000",
+          "ontong_youth_20260522005400213211__chunk_000",
+          "ontong_youth_20260420005400212772__chunk_000"
+        ],
+        "oy_eval_repair_q0021": [
+          "ontong_youth_20250909005400211682__chunk_000",
+          "ontong_youth_20250909005400211683__chunk_000",
+          "ontong_youth_20250908005400211673__chunk_000",
+          "ontong_youth_20250502005400210766__chunk_000",
+          "ontong_youth_20250724005400211490__chunk_000"
+        ],
+        "oy_eval_repair_q0024": [
+          "ontong_youth_20260402005400212380__chunk_000",
+          "ontong_youth_20250509005400210801__chunk_000",
+          "ontong_youth_20250507005400210785__chunk_000",
+          "ontong_youth_20250509005400210803__chunk_000",
+          "ontong_youth_20250501005400210745__chunk_000"
+        ],
+        "oy_eval_repair_q0027": [
+          "ontong_youth_20260313005400212130__chunk_000",
+          "ontong_youth_20260313005400212118__chunk_000",
+          "ontong_youth_20250829005400211537__chunk_000",
+          "ontong_youth_20260313005400212130__chunk_001",
+          "ontong_youth_20260619005400213242__chunk_000"
+        ],
+        "oy_eval_repair_q0030": [
+          "ontong_youth_20250529005400110881__chunk_000",
+          "ontong_youth_20260211005400112094__chunk_000",
+          "ontong_youth_20250112005400110167__chunk_000",
+          "ontong_youth_20260810005400113328__chunk_000",
+          "ontong_youth_20260610005400113229__chunk_000"
+        ],
+        "oy_eval_repair_q0032": [
+          "ontong_youth_20250612005400110914__chunk_001",
+          "ontong_youth_20250612005400110914__chunk_000",
+          "ontong_youth_20260311005400112111__chunk_000",
+          "ontong_youth_20250612005400110918__chunk_001",
+          "ontong_youth_20260311005400112111__chunk_001"
+        ],
+        "oy_eval_repair_q0033": [
+          "ontong_youth_20250331005400210678__chunk_000",
+          "ontong_youth_20260407005400212564__chunk_000",
+          "ontong_youth_20250331005400210678__chunk_001",
+          "ontong_youth_20260522005400213213__chunk_000",
+          "ontong_youth_20260407005400212564__chunk_001"
+        ],
+        "oy_eval_repair_q0034": [
+          "ontong_youth_20250618005400211047__chunk_000",
+          "ontong_youth_20260429005400212946__chunk_000",
+          "ontong_youth_20251230005400212052__chunk_000",
+          "ontong_youth_20250618005400211045__chunk_000",
+          "ontong_youth_20250620005400111087__chunk_000"
+        ],
+        "oy_eval_repair_q0035": [
+          "ontong_youth_20260407005400212567__chunk_000",
+          "ontong_youth_20260709005400213253__chunk_000",
+          "ontong_youth_20260722005400213274__chunk_000",
+          "ontong_youth_20260410005400212666__chunk_000",
+          "ontong_youth_20260408005400212630__chunk_000"
+        ],
+        "oy_eval_repair_q0037": [
+          "ontong_youth_20250316005400210640__chunk_002",
+          "ontong_youth_20250316005400210640__chunk_000",
+          "ontong_youth_20260305005400112100__chunk_000",
+          "ontong_youth_20250227005400210572__chunk_000",
+          "ontong_youth_20250718005400211459__chunk_000"
+        ],
+        "oy_eval_repair_q0038": [
+          "ontong_youth_20250403005400210687__chunk_000",
+          "ontong_youth_20260107005400212076__chunk_000",
+          "ontong_youth_20250121005400110344__chunk_000",
+          "ontong_youth_20250403005400210687__chunk_002",
+          "ontong_youth_20250121005400110344__chunk_001"
+        ],
+        "oy_eval_repair_q0039": [
+          "ontong_youth_20250119005400210339__chunk_000",
+          "ontong_youth_20260408005400212606__chunk_000",
+          "ontong_youth_20251124005400211941__chunk_000",
+          "ontong_youth_20250731005400211508__chunk_001",
+          "ontong_youth_20250516005400210831__chunk_000"
+        ],
+        "oy_eval_repair_q0042": [
+          "ontong_youth_20250904005400211641__chunk_000",
+          "ontong_youth_20251112005400211865__chunk_000",
+          "ontong_youth_20260504005400113077__chunk_000",
+          "ontong_youth_20251112005400211868__chunk_000",
+          "ontong_youth_20260504005400113114__chunk_000"
+        ],
+        "oy_eval_repair_q0043": [
+          "ontong_youth_20250711005400211195__chunk_000",
+          "ontong_youth_20260728005400213311__chunk_000",
+          "ontong_youth_20260407005400212554__chunk_000",
+          "ontong_youth_20260407005400212554__chunk_001",
+          "ontong_youth_20260429005400212920__chunk_000"
+        ],
+        "oy_eval_repair_q0045": [
+          "ontong_youth_20250904005400211645__chunk_000",
+          "ontong_youth_20250904005400211632__chunk_001",
+          "ontong_youth_20250904005400211622__chunk_000",
+          "ontong_youth_20250904005400211642__chunk_001",
+          "ontong_youth_20250904005400211623__chunk_000"
+        ],
+        "oy_eval_repair_q0047": [
+          "ontong_youth_20250723005400211484__chunk_000",
+          "ontong_youth_20250723005400211485__chunk_000",
+          "ontong_youth_20250723005400211478__chunk_000",
+          "ontong_youth_20250722005400211476__chunk_000",
+          "ontong_youth_20250716005400211320__chunk_000"
+        ],
+        "oy_eval_repair_q0054": [
+          "ontong_youth_20251231005400212065__chunk_000",
+          "ontong_youth_20250327005400210667__chunk_000",
+          "ontong_youth_20250515005400210826__chunk_000",
+          "ontong_youth_20251107005400211812__chunk_000",
+          "ontong_youth_20260429005400212947__chunk_000"
+        ],
+        "oy_eval_repair_q0056": [
+          "ontong_youth_20250903005400211612__chunk_001",
+          "ontong_youth_20250903005400211613__chunk_001",
+          "ontong_youth_20251231005400212061__chunk_000",
+          "ontong_youth_20250903005400111592__chunk_001",
+          "ontong_youth_20250113005400210184__chunk_000"
+        ],
+        "oy_eval_repair_q0066": [
+          "ontong_youth_20250903005400211613__chunk_000",
+          "ontong_youth_20250903005400211612__chunk_000",
+          "ontong_youth_20250904005400211622__chunk_000",
+          "ontong_youth_20250908005400211662__chunk_000",
+          "ontong_youth_20250227005400210570__chunk_000"
+        ],
+        "oy_eval_repair_q0072": [
+          "ontong_youth_20250114005400110236__chunk_000",
+          "ontong_youth_20250114005400110244__chunk_000",
+          "ontong_youth_20250613005400110927__chunk_000",
+          "ontong_youth_20250114005400110248__chunk_000",
+          "ontong_youth_20250908005400211667__chunk_000"
+        ],
+        "oy_eval_repair_q0073": [
+          "ontong_youth_20250316005400210639__chunk_000",
+          "ontong_youth_20250316005400210639__chunk_002",
+          "ontong_youth_20250316005400210639__chunk_001",
+          "ontong_youth_20250305005400110593__chunk_001",
+          "ontong_youth_20250316005400210621__chunk_001"
+        ],
+        "oy_eval_repair_q0074": [
+          "ontong_youth_20250113005400110192__chunk_000",
+          "ontong_youth_20260706005400213250__chunk_000",
+          "ontong_youth_20260504005400113102__chunk_000",
+          "ontong_youth_20250903005400211604__chunk_000",
+          "ontong_youth_20260504005400113117__chunk_000"
+        ],
+        "oy_eval_repair_q0075": [
+          "ontong_youth_20250619005400111066__chunk_000",
+          "ontong_youth_20250619005400111072__chunk_000",
+          "ontong_youth_20250619005400111072__chunk_001",
+          "ontong_youth_20250619005400111066__chunk_001",
+          "ontong_youth_20250619005400111070__chunk_002"
+        ],
+        "oy_eval_repair_q0076": [
+          "ontong_youth_20250114005400110248__chunk_000",
+          "ontong_youth_20250114005400110248__chunk_001",
+          "ontong_youth_20250114005400110244__chunk_000",
+          "ontong_youth_20250316005400210638__chunk_001",
+          "ontong_youth_20250114005400110236__chunk_000"
+        ],
+        "oy_eval_repair_q0077": [
+          "ontong_youth_20250710005400211177__chunk_000",
+          "ontong_youth_20260407005400212570__chunk_000",
+          "ontong_youth_20250710005400211177__chunk_001",
+          "ontong_youth_20250710005400211176__chunk_000",
+          "ontong_youth_20250710005400211176__chunk_001"
+        ],
+        "oy_eval_repair_q0080": [
+          "ontong_youth_20260408005400212626__chunk_000",
+          "ontong_youth_20260722005400213296__chunk_000",
+          "ontong_youth_20250428005400210727__chunk_000",
+          "ontong_youth_20260429005400212936__chunk_002",
+          "ontong_youth_20250331005400210676__chunk_000"
+        ],
+        "oy_eval_repair_q0082": [
+          "ontong_youth_20250619005400111070__chunk_000",
+          "ontong_youth_20250619005400111070__chunk_002",
+          "ontong_youth_20250619005400111070__chunk_001",
+          "ontong_youth_20250616005400110940__chunk_001",
+          "ontong_youth_20260420005400212772__chunk_001"
+        ],
+        "oy_eval_repair_q0085": [
+          "ontong_youth_20250619005400111072__chunk_001",
+          "ontong_youth_20250619005400111072__chunk_000",
+          "ontong_youth_20250619005400111070__chunk_001",
+          "ontong_youth_20250619005400111066__chunk_000",
+          "ontong_youth_20250619005400111066__chunk_001"
+        ],
+        "oy_eval_repair_q0089": [
+          "ontong_youth_20251231005400212069__chunk_000",
+          "ontong_youth_20250729005400211505__chunk_000",
+          "ontong_youth_20251231005400212058__chunk_000",
+          "ontong_youth_20260714005400113258__chunk_001",
+          "ontong_youth_20251230005400212053__chunk_000"
+        ],
+        "oy_eval_repair_q0099": [
+          "ontong_youth_20250904005400211649__chunk_000",
+          "ontong_youth_20250904005400211647__chunk_000",
+          "ontong_youth_20250904005400211646__chunk_000",
+          "ontong_youth_20250904005400211632__chunk_001",
+          "ontong_youth_20250221005400210533__chunk_000"
+        ],
+        "oy_eval_repair_q0100": [
+          "ontong_youth_20250114005400110230__chunk_000",
+          "ontong_youth_20250113005400110168__chunk_000",
+          "ontong_youth_20250620005400111084__chunk_001",
+          "ontong_youth_20260316005400112168__chunk_002",
+          "ontong_youth_20260408005400212623__chunk_001"
+        ],
+        "oy_eval_v2r_q0002": [
+          "ontong_youth_20250211005400210415__chunk_000",
+          "ontong_youth_20250430005400210732__chunk_000",
+          "ontong_youth_20250502005400110774__chunk_000",
+          "ontong_youth_20250430005400210739__chunk_000",
+          "ontong_youth_20250901005400211540__chunk_000"
+        ],
+        "oy_eval_v2r_q0003": [
+          "ontong_youth_20250430005400210741__chunk_000",
+          "ontong_youth_20250501005400210753__chunk_000",
+          "ontong_youth_20250502005400210781__chunk_001",
+          "ontong_youth_20250430005400210741__chunk_001",
+          "ontong_youth_20250430005400210736__chunk_000"
+        ],
+        "oy_eval_v2r_q0004": [
+          "ontong_youth_20260407005400212572__chunk_000",
+          "ontong_youth_20250331005400210675__chunk_000",
+          "ontong_youth_20250331005400210675__chunk_001",
+          "ontong_youth_20260408005400212598__chunk_000",
+          "ontong_youth_20260408005400212628__chunk_000"
+        ],
+        "oy_eval_v2r_q0005": [
+          "ontong_youth_20260513005400213204__chunk_000",
+          "ontong_youth_20250520005400210862__chunk_001",
+          "ontong_youth_20250515005400210823__chunk_000",
+          "ontong_youth_20250917005400211702__chunk_001",
+          "ontong_youth_20260513005400213198__chunk_000"
+        ],
+        "oy_eval_v2r_q0015": [
+          "ontong_youth_20250814005400211517__chunk_000",
+          "ontong_youth_20250814005400211517__chunk_001",
+          "ontong_youth_20250719005400211466__chunk_000",
+          "ontong_youth_20260107005400212072__chunk_000",
+          "ontong_youth_20260121005400212078__chunk_001"
+        ],
+        "oy_eval_v2r_q0017": [
+          "ontong_youth_20250822005400211521__chunk_000",
+          "ontong_youth_20240119005400200007__chunk_000",
+          "ontong_youth_20250729005400211499__chunk_000",
+          "ontong_youth_20260722005400213276__chunk_000",
+          "ontong_youth_20260708005400213251__chunk_000"
+        ],
+        "oy_eval_v2r_q0025": [
+          "ontong_youth_20251121005400211924__chunk_000",
+          "ontong_youth_20251120005400211906__chunk_000",
+          "ontong_youth_20251117005400211904__chunk_000",
+          "ontong_youth_20251121005400211921__chunk_001",
+          "ontong_youth_20251121005400211921__chunk_000"
+        ],
+        "oy_eval_v2r_q0026": [
+          "ontong_youth_20250507005400210785__chunk_000",
+          "ontong_youth_20250507005400210785__chunk_001",
+          "ontong_youth_20250509005400210803__chunk_000",
+          "ontong_youth_20250501005400210745__chunk_000",
+          "ontong_youth_20250509005400210801__chunk_000"
+        ],
+        "oy_eval_v2r_q0064": [
+          "ontong_youth_20260409005400212656__chunk_000",
+          "ontong_youth_20250715005400211238__chunk_000",
+          "ontong_youth_20260410005400212667__chunk_000",
+          "ontong_youth_20260413005400212693__chunk_000",
+          "ontong_youth_20250714005400111222__chunk_000"
+        ],
+        "oy_eval_v2r_q0078": [
+          "ontong_youth_20251112005400211858__chunk_000",
+          "ontong_youth_20260504005400113115__chunk_000",
+          "ontong_youth_20251214005400211987__chunk_000",
+          "ontong_youth_20260504005400113110__chunk_000",
+          "ontong_youth_20260504005400113113__chunk_000"
+        ],
+        "oy_eval_v2r_q0086": [
+          "ontong_youth_20250717005400211342__chunk_000",
+          "ontong_youth_20240708005400200012__chunk_002",
+          "ontong_youth_20260414005400212739__chunk_000",
+          "ontong_youth_20260414005400212741__chunk_000",
+          "ontong_youth_20260414005400212740__chunk_000"
+        ],
+        "oy_eval_v2r_q0090": [
+          "ontong_youth_20260406005400212412__chunk_002",
+          "ontong_youth_20260406005400212449__chunk_002",
+          "ontong_youth_20260506005400213155__chunk_002",
+          "ontong_youth_20260406005400212399__chunk_002",
+          "ontong_youth_20260724005400213303__chunk_002"
+        ],
+        "oy_eval_v2r_q0094": [
+          "ontong_youth_20250307005400210601__chunk_000",
+          "ontong_youth_20250307005400210601__chunk_001",
+          "ontong_youth_20250307005400210600__chunk_000",
+          "ontong_youth_20250307005400210600__chunk_001",
+          "ontong_youth_20250125005400210403__chunk_000"
+        ],
+        "oy_eval_v2r_q0098": [
+          "ontong_youth_20260421005400212821__chunk_000",
+          "ontong_youth_20260421005400212824__chunk_000",
+          "ontong_youth_20250328005400210669__chunk_000",
+          "ontong_youth_20260422005400212862__chunk_000",
+          "ontong_youth_20260413005400212718__chunk_000"
+        ]
+      },
+      "failure_counts": {
+        "DOCUMENT_HIT_BUT_CHUNK_MISS_TOP5": 1,
+        "DOCUMENT_MISS_TOP5": 2,
+        "LOW_RANK_RELEVANT_CHUNK": 2
+      },
+      "metrics_summary": {
+        "document_hit_at_1": 0.7446808510638298,
+        "document_hit_at_3": 0.9148936170212766,
+        "document_hit_at_5": 0.9574468085106383,
+        "document_mrr": 0.8287234042553193,
+        "chunk_hit_at_1": 0.7021276595744681,
+        "chunk_hit_at_3": 0.8936170212765957,
+        "chunk_hit_at_5": 0.9361702127659575,
+        "chunk_mrr": 0.796808510638298,
+        "average_retrieval_latency_ms": 394.39534687219145,
+        "p95_retrieval_latency_ms": 482.43340011686087,
+        "max_retrieval_latency_ms": 505.64320012927055,
+        "retrieval_failure_count": 0,
+        "evaluation_query_count": 47,
+        "evaluation_ks": [
+          1,
+          3,
+          5
+        ]
+      }
+    },
+    {
+      "experiment_id": "C01-20261112-R4",
+      "valid": true,
+      "errors": [],
+      "query_count": 47,
+      "top5_rank_rows_valid": true,
+      "missing_chunk_id_count": 0,
+      "invalid_condition_chunk_id_count": 0,
+      "chunk_document_mismatch_count": 0,
+      "question_latency_count": 47,
+      "average_retrieval_latency_ms": 345.0422488905965,
+      "p95_retrieval_latency_ms": 460.5398001149297,
+      "average_matches_summary": true,
+      "p95_matches_summary": true,
+      "runtime_error_count": 0,
+      "ranking_signature": {
+        "oy_eval_repair_q0007": [
+          "ontong_youth_20260325005400212265__chunk_001",
+          "ontong_youth_20260331005400212356__chunk_001",
+          "ontong_youth_20250901005400211541__chunk_000",
+          "ontong_youth_20260619005400213242__chunk_000",
+          "ontong_youth_20250724005400211490__chunk_000"
+        ],
+        "oy_eval_repair_q0009": [
+          "ontong_youth_20250220005400210475__chunk_000",
+          "ontong_youth_20250220005400210475__chunk_001",
+          "ontong_youth_20250116005400210314__chunk_000",
+          "ontong_youth_20250331005400210676__chunk_000",
+          "ontong_youth_20251219005400212033__chunk_000"
+        ],
+        "oy_eval_repair_q0012": [
+          "ontong_youth_20250227005400210568__chunk_000",
+          "ontong_youth_20260429005400212926__chunk_000",
+          "ontong_youth_20250305005400210594__chunk_000",
+          "ontong_youth_20260522005400213211__chunk_000",
+          "ontong_youth_20260420005400212772__chunk_000"
+        ],
+        "oy_eval_repair_q0021": [
+          "ontong_youth_20250909005400211682__chunk_000",
+          "ontong_youth_20250909005400211683__chunk_000",
+          "ontong_youth_20250908005400211673__chunk_000",
+          "ontong_youth_20250502005400210766__chunk_000",
+          "ontong_youth_20250724005400211490__chunk_000"
+        ],
+        "oy_eval_repair_q0024": [
+          "ontong_youth_20260402005400212380__chunk_000",
+          "ontong_youth_20250509005400210801__chunk_000",
+          "ontong_youth_20250507005400210785__chunk_000",
+          "ontong_youth_20250509005400210803__chunk_000",
+          "ontong_youth_20250501005400210745__chunk_000"
+        ],
+        "oy_eval_repair_q0027": [
+          "ontong_youth_20260313005400212130__chunk_000",
+          "ontong_youth_20260313005400212118__chunk_000",
+          "ontong_youth_20250829005400211537__chunk_000",
+          "ontong_youth_20260313005400212130__chunk_001",
+          "ontong_youth_20260619005400213242__chunk_000"
+        ],
+        "oy_eval_repair_q0030": [
+          "ontong_youth_20250529005400110881__chunk_000",
+          "ontong_youth_20260211005400112094__chunk_000",
+          "ontong_youth_20250112005400110167__chunk_000",
+          "ontong_youth_20260810005400113328__chunk_000",
+          "ontong_youth_20260610005400113229__chunk_000"
+        ],
+        "oy_eval_repair_q0032": [
+          "ontong_youth_20250612005400110914__chunk_001",
+          "ontong_youth_20250612005400110914__chunk_000",
+          "ontong_youth_20260311005400112111__chunk_000",
+          "ontong_youth_20250612005400110918__chunk_001",
+          "ontong_youth_20260311005400112111__chunk_001"
+        ],
+        "oy_eval_repair_q0033": [
+          "ontong_youth_20250331005400210678__chunk_000",
+          "ontong_youth_20260407005400212564__chunk_000",
+          "ontong_youth_20250331005400210678__chunk_001",
+          "ontong_youth_20260522005400213213__chunk_000",
+          "ontong_youth_20260407005400212564__chunk_001"
+        ],
+        "oy_eval_repair_q0034": [
+          "ontong_youth_20250618005400211047__chunk_000",
+          "ontong_youth_20260429005400212946__chunk_000",
+          "ontong_youth_20251230005400212052__chunk_000",
+          "ontong_youth_20250618005400211045__chunk_000",
+          "ontong_youth_20250620005400111087__chunk_000"
+        ],
+        "oy_eval_repair_q0035": [
+          "ontong_youth_20260407005400212567__chunk_000",
+          "ontong_youth_20260709005400213253__chunk_000",
+          "ontong_youth_20260722005400213274__chunk_000",
+          "ontong_youth_20260410005400212666__chunk_000",
+          "ontong_youth_20260408005400212630__chunk_000"
+        ],
+        "oy_eval_repair_q0037": [
+          "ontong_youth_20250316005400210640__chunk_002",
+          "ontong_youth_20250316005400210640__chunk_000",
+          "ontong_youth_20260305005400112100__chunk_000",
+          "ontong_youth_20250227005400210572__chunk_000",
+          "ontong_youth_20250718005400211459__chunk_000"
+        ],
+        "oy_eval_repair_q0038": [
+          "ontong_youth_20250403005400210687__chunk_000",
+          "ontong_youth_20260107005400212076__chunk_000",
+          "ontong_youth_20250121005400110344__chunk_000",
+          "ontong_youth_20250403005400210687__chunk_002",
+          "ontong_youth_20250121005400110344__chunk_001"
+        ],
+        "oy_eval_repair_q0039": [
+          "ontong_youth_20250119005400210339__chunk_000",
+          "ontong_youth_20260408005400212606__chunk_000",
+          "ontong_youth_20251124005400211941__chunk_000",
+          "ontong_youth_20250731005400211508__chunk_001",
+          "ontong_youth_20250516005400210831__chunk_000"
+        ],
+        "oy_eval_repair_q0042": [
+          "ontong_youth_20250904005400211641__chunk_000",
+          "ontong_youth_20251112005400211865__chunk_000",
+          "ontong_youth_20260504005400113077__chunk_000",
+          "ontong_youth_20251112005400211868__chunk_000",
+          "ontong_youth_20260504005400113114__chunk_000"
+        ],
+        "oy_eval_repair_q0043": [
+          "ontong_youth_20250711005400211195__chunk_000",
+          "ontong_youth_20260728005400213311__chunk_000",
+          "ontong_youth_20260407005400212554__chunk_000",
+          "ontong_youth_20260407005400212554__chunk_001",
+          "ontong_youth_20260429005400212920__chunk_000"
+        ],
+        "oy_eval_repair_q0045": [
+          "ontong_youth_20250904005400211645__chunk_000",
+          "ontong_youth_20250904005400211632__chunk_001",
+          "ontong_youth_20250904005400211622__chunk_000",
+          "ontong_youth_20250904005400211642__chunk_001",
+          "ontong_youth_20250904005400211623__chunk_000"
+        ],
+        "oy_eval_repair_q0047": [
+          "ontong_youth_20250723005400211484__chunk_000",
+          "ontong_youth_20250723005400211485__chunk_000",
+          "ontong_youth_20250723005400211478__chunk_000",
+          "ontong_youth_20250722005400211476__chunk_000",
+          "ontong_youth_20250716005400211320__chunk_000"
+        ],
+        "oy_eval_repair_q0054": [
+          "ontong_youth_20251231005400212065__chunk_000",
+          "ontong_youth_20250327005400210667__chunk_000",
+          "ontong_youth_20250515005400210826__chunk_000",
+          "ontong_youth_20251107005400211812__chunk_000",
+          "ontong_youth_20260429005400212947__chunk_000"
+        ],
+        "oy_eval_repair_q0056": [
+          "ontong_youth_20250903005400211612__chunk_001",
+          "ontong_youth_20250903005400211613__chunk_001",
+          "ontong_youth_20251231005400212061__chunk_000",
+          "ontong_youth_20250903005400111592__chunk_001",
+          "ontong_youth_20250113005400210184__chunk_000"
+        ],
+        "oy_eval_repair_q0066": [
+          "ontong_youth_20250903005400211613__chunk_000",
+          "ontong_youth_20250903005400211612__chunk_000",
+          "ontong_youth_20250904005400211622__chunk_000",
+          "ontong_youth_20250908005400211662__chunk_000",
+          "ontong_youth_20250227005400210570__chunk_000"
+        ],
+        "oy_eval_repair_q0072": [
+          "ontong_youth_20250114005400110236__chunk_000",
+          "ontong_youth_20250114005400110244__chunk_000",
+          "ontong_youth_20250613005400110927__chunk_000",
+          "ontong_youth_20250114005400110248__chunk_000",
+          "ontong_youth_20250908005400211667__chunk_000"
+        ],
+        "oy_eval_repair_q0073": [
+          "ontong_youth_20250316005400210639__chunk_000",
+          "ontong_youth_20250316005400210639__chunk_002",
+          "ontong_youth_20250316005400210639__chunk_001",
+          "ontong_youth_20250305005400110593__chunk_001",
+          "ontong_youth_20250316005400210621__chunk_001"
+        ],
+        "oy_eval_repair_q0074": [
+          "ontong_youth_20250113005400110192__chunk_000",
+          "ontong_youth_20260706005400213250__chunk_000",
+          "ontong_youth_20260504005400113102__chunk_000",
+          "ontong_youth_20250903005400211604__chunk_000",
+          "ontong_youth_20260504005400113117__chunk_000"
+        ],
+        "oy_eval_repair_q0075": [
+          "ontong_youth_20250619005400111066__chunk_000",
+          "ontong_youth_20250619005400111072__chunk_000",
+          "ontong_youth_20250619005400111072__chunk_001",
+          "ontong_youth_20250619005400111066__chunk_001",
+          "ontong_youth_20250619005400111070__chunk_002"
+        ],
+        "oy_eval_repair_q0076": [
+          "ontong_youth_20250114005400110248__chunk_000",
+          "ontong_youth_20250114005400110248__chunk_001",
+          "ontong_youth_20250114005400110244__chunk_000",
+          "ontong_youth_20250316005400210638__chunk_001",
+          "ontong_youth_20250114005400110236__chunk_000"
+        ],
+        "oy_eval_repair_q0077": [
+          "ontong_youth_20250710005400211177__chunk_000",
+          "ontong_youth_20260407005400212570__chunk_000",
+          "ontong_youth_20250710005400211177__chunk_001",
+          "ontong_youth_20250710005400211176__chunk_000",
+          "ontong_youth_20250710005400211176__chunk_001"
+        ],
+        "oy_eval_repair_q0080": [
+          "ontong_youth_20260408005400212626__chunk_000",
+          "ontong_youth_20260722005400213296__chunk_000",
+          "ontong_youth_20250428005400210727__chunk_000",
+          "ontong_youth_20260429005400212936__chunk_002",
+          "ontong_youth_20250331005400210676__chunk_000"
+        ],
+        "oy_eval_repair_q0082": [
+          "ontong_youth_20250619005400111070__chunk_000",
+          "ontong_youth_20250619005400111070__chunk_002",
+          "ontong_youth_20250619005400111070__chunk_001",
+          "ontong_youth_20250616005400110940__chunk_001",
+          "ontong_youth_20260420005400212772__chunk_001"
+        ],
+        "oy_eval_repair_q0085": [
+          "ontong_youth_20250619005400111072__chunk_001",
+          "ontong_youth_20250619005400111072__chunk_000",
+          "ontong_youth_20250619005400111070__chunk_001",
+          "ontong_youth_20250619005400111066__chunk_000",
+          "ontong_youth_20250619005400111066__chunk_001"
+        ],
+        "oy_eval_repair_q0089": [
+          "ontong_youth_20251231005400212069__chunk_000",
+          "ontong_youth_20250729005400211505__chunk_000",
+          "ontong_youth_20251231005400212058__chunk_000",
+          "ontong_youth_20260714005400113258__chunk_001",
+          "ontong_youth_20251230005400212053__chunk_000"
+        ],
+        "oy_eval_repair_q0099": [
+          "ontong_youth_20250904005400211649__chunk_000",
+          "ontong_youth_20250904005400211647__chunk_000",
+          "ontong_youth_20250904005400211646__chunk_000",
+          "ontong_youth_20250904005400211632__chunk_001",
+          "ontong_youth_20250221005400210533__chunk_000"
+        ],
+        "oy_eval_repair_q0100": [
+          "ontong_youth_20250114005400110230__chunk_000",
+          "ontong_youth_20250113005400110168__chunk_000",
+          "ontong_youth_20250620005400111084__chunk_001",
+          "ontong_youth_20260316005400112168__chunk_002",
+          "ontong_youth_20260408005400212623__chunk_001"
+        ],
+        "oy_eval_v2r_q0002": [
+          "ontong_youth_20250211005400210415__chunk_000",
+          "ontong_youth_20250430005400210732__chunk_000",
+          "ontong_youth_20250502005400110774__chunk_000",
+          "ontong_youth_20250430005400210739__chunk_000",
+          "ontong_youth_20250901005400211540__chunk_000"
+        ],
+        "oy_eval_v2r_q0003": [
+          "ontong_youth_20250430005400210741__chunk_000",
+          "ontong_youth_20250501005400210753__chunk_000",
+          "ontong_youth_20250502005400210781__chunk_001",
+          "ontong_youth_20250430005400210741__chunk_001",
+          "ontong_youth_20250430005400210736__chunk_000"
+        ],
+        "oy_eval_v2r_q0004": [
+          "ontong_youth_20260407005400212572__chunk_000",
+          "ontong_youth_20250331005400210675__chunk_000",
+          "ontong_youth_20250331005400210675__chunk_001",
+          "ontong_youth_20260408005400212598__chunk_000",
+          "ontong_youth_20260408005400212628__chunk_000"
+        ],
+        "oy_eval_v2r_q0005": [
+          "ontong_youth_20260513005400213204__chunk_000",
+          "ontong_youth_20250520005400210862__chunk_001",
+          "ontong_youth_20250515005400210823__chunk_000",
+          "ontong_youth_20250917005400211702__chunk_001",
+          "ontong_youth_20260513005400213198__chunk_000"
+        ],
+        "oy_eval_v2r_q0015": [
+          "ontong_youth_20250814005400211517__chunk_000",
+          "ontong_youth_20250814005400211517__chunk_001",
+          "ontong_youth_20250719005400211466__chunk_000",
+          "ontong_youth_20260107005400212072__chunk_000",
+          "ontong_youth_20260121005400212078__chunk_001"
+        ],
+        "oy_eval_v2r_q0017": [
+          "ontong_youth_20250822005400211521__chunk_000",
+          "ontong_youth_20240119005400200007__chunk_000",
+          "ontong_youth_20250729005400211499__chunk_000",
+          "ontong_youth_20260722005400213276__chunk_000",
+          "ontong_youth_20260708005400213251__chunk_000"
+        ],
+        "oy_eval_v2r_q0025": [
+          "ontong_youth_20251121005400211924__chunk_000",
+          "ontong_youth_20251120005400211906__chunk_000",
+          "ontong_youth_20251117005400211904__chunk_000",
+          "ontong_youth_20251121005400211921__chunk_001",
+          "ontong_youth_20251121005400211921__chunk_000"
+        ],
+        "oy_eval_v2r_q0026": [
+          "ontong_youth_20250507005400210785__chunk_000",
+          "ontong_youth_20250507005400210785__chunk_001",
+          "ontong_youth_20250509005400210803__chunk_000",
+          "ontong_youth_20250501005400210745__chunk_000",
+          "ontong_youth_20250509005400210801__chunk_000"
+        ],
+        "oy_eval_v2r_q0064": [
+          "ontong_youth_20260409005400212656__chunk_000",
+          "ontong_youth_20250715005400211238__chunk_000",
+          "ontong_youth_20260410005400212667__chunk_000",
+          "ontong_youth_20260413005400212693__chunk_000",
+          "ontong_youth_20250714005400111222__chunk_000"
+        ],
+        "oy_eval_v2r_q0078": [
+          "ontong_youth_20251112005400211858__chunk_000",
+          "ontong_youth_20260504005400113115__chunk_000",
+          "ontong_youth_20251214005400211987__chunk_000",
+          "ontong_youth_20260504005400113110__chunk_000",
+          "ontong_youth_20260504005400113113__chunk_000"
+        ],
+        "oy_eval_v2r_q0086": [
+          "ontong_youth_20250717005400211342__chunk_000",
+          "ontong_youth_20240708005400200012__chunk_002",
+          "ontong_youth_20260414005400212739__chunk_000",
+          "ontong_youth_20260414005400212741__chunk_000",
+          "ontong_youth_20260414005400212740__chunk_000"
+        ],
+        "oy_eval_v2r_q0090": [
+          "ontong_youth_20260406005400212412__chunk_002",
+          "ontong_youth_20260406005400212449__chunk_002",
+          "ontong_youth_20260506005400213155__chunk_002",
+          "ontong_youth_20260406005400212399__chunk_002",
+          "ontong_youth_20260724005400213303__chunk_002"
+        ],
+        "oy_eval_v2r_q0094": [
+          "ontong_youth_20250307005400210601__chunk_000",
+          "ontong_youth_20250307005400210601__chunk_001",
+          "ontong_youth_20250307005400210600__chunk_000",
+          "ontong_youth_20250307005400210600__chunk_001",
+          "ontong_youth_20250125005400210403__chunk_000"
+        ],
+        "oy_eval_v2r_q0098": [
+          "ontong_youth_20260421005400212821__chunk_000",
+          "ontong_youth_20260421005400212824__chunk_000",
+          "ontong_youth_20250328005400210669__chunk_000",
+          "ontong_youth_20260422005400212862__chunk_000",
+          "ontong_youth_20260413005400212718__chunk_000"
+        ]
+      },
+      "failure_counts": {
+        "DOCUMENT_HIT_BUT_CHUNK_MISS_TOP5": 1,
+        "DOCUMENT_MISS_TOP5": 2,
+        "LOW_RANK_RELEVANT_CHUNK": 2
+      },
+      "metrics_summary": {
+        "document_hit_at_1": 0.7446808510638298,
+        "document_hit_at_3": 0.9148936170212766,
+        "document_hit_at_5": 0.9574468085106383,
+        "document_mrr": 0.8287234042553193,
+        "chunk_hit_at_1": 0.7021276595744681,
+        "chunk_hit_at_3": 0.8936170212765957,
+        "chunk_hit_at_5": 0.9361702127659575,
+        "chunk_mrr": 0.796808510638298,
+        "average_retrieval_latency_ms": 345.0422488905965,
+        "p95_retrieval_latency_ms": 460.5398001149297,
+        "max_retrieval_latency_ms": 661.1537002027035,
+        "retrieval_failure_count": 0,
+        "evaluation_query_count": 47,
+        "evaluation_ks": [
+          1,
+          3,
+          5
+        ]
+      }
+    }
+  ]
+}

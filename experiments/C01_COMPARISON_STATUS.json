@@ -1,0 +1,134 @@
+{
+  "active_experiment_id": null,
+  "runs": [
+    {
+      "experiment_id": "C01-20261112-R1",
+      "status": "SUCCESS",
+      "index_reused": false,
+      "metrics_summary": {
+        "document_hit_at_1": 0.7446808510638298,
+        "document_hit_at_3": 0.9148936170212766,
+        "document_hit_at_5": 0.9574468085106383,
+        "document_mrr": 0.8287234042553193,
+        "chunk_hit_at_1": 0.7021276595744681,
+        "chunk_hit_at_3": 0.8936170212765957,
+        "chunk_hit_at_5": 0.9361702127659575,
+        "chunk_mrr": 0.796808510638298,
+        "average_retrieval_latency_ms": 444.81748078969565,
+        "p95_retrieval_latency_ms": 854.8695994541049,
+        "max_retrieval_latency_ms": 1249.3377001956105,
+        "retrieval_failure_count": 0,
+        "evaluation_query_count": 47,
+        "evaluation_ks": [
+          1,
+          3,
+          5
+        ]
+      },
+      "artifacts": {
+        "output_dir": "C:\\Users\\home\\Desktop\\PJ\\RAG-Project\\experiments\\C01-20261112-R1",
+        "experiment_manifest_path": "C:\\Users\\home\\Desktop\\PJ\\RAG-Project\\experiments\\C01-20261112-R1\\experiment_manifest.json",
+        "metrics_summary_path": "C:\\Users\\home\\Desktop\\PJ\\RAG-Project\\experiments\\C01-20261112-R1\\metrics_summary.json",
+        "failure_cases_path": "C:\\Users\\home\\Desktop\\PJ\\RAG-Project\\experiments\\C01-20261112-R1\\failure_cases.csv",
+        "environment_path": "C:\\Users\\home\\Desktop\\PJ\\RAG-Project\\experiments\\C01-20261112-R1\\environment.json"
+      }
+    },
+    {
+      "experiment_id": "C01-20261112-R2",
+      "status": "SUCCESS",
+      "index_reused": true,
+      "metrics_summary": {
+        "document_hit_at_1": 0.7446808510638298,
+        "document_hit_at_3": 0.9148936170212766,
+        "document_hit_at_5": 0.9574468085106383,
+        "document_mrr": 0.8287234042553193,
+        "chunk_hit_at_1": 0.7021276595744681,
+        "chunk_hit_at_3": 0.8936170212765957,
+        "chunk_hit_at_5": 0.9361702127659575,
+        "chunk_mrr": 0.796808510638298,
+        "average_retrieval_latency_ms": 310.60186807224727,
+        "p95_retrieval_latency_ms": 697.2107999026775,
+        "max_retrieval_latency_ms": 899.6283998712897,
+        "retrieval_failure_count": 0,
+        "evaluation_query_count": 47,
+        "evaluation_ks": [
+          1,
+          3,
+          5
+        ]
+      },
+      "artifacts": {
+        "output_dir": "C:\\Users\\home\\Desktop\\PJ\\RAG-Project\\experiments\\C01-20261112-R2",
+        "experiment_manifest_path": "C:\\Users\\home\\Desktop\\PJ\\RAG-Project\\experiments\\C01-20261112-R2\\experiment_manifest.json",
+        "metrics_summary_path": "C:\\Users\\home\\Desktop\\PJ\\RAG-Project\\experiments\\C01-20261112-R2\\metrics_summary.json",
+        "failure_cases_path": "C:\\Users\\home\\Desktop\\PJ\\RAG-Project\\experiments\\C01-20261112-R2\\failure_cases.csv",
+        "environment_path": "C:\\Users\\home\\Desktop\\PJ\\RAG-Project\\experiments\\C01-20261112-R2\\environment.json"
+      }
+    },
+    {
+      "experiment_id": "C01-20261112-R3",
+      "status": "SUCCESS",
+      "index_reused": true,
+      "metrics_summary": {
+        "document_hit_at_1": 0.7446808510638298,
+        "document_hit_at_3": 0.9148936170212766,
+        "document_hit_at_5": 0.9574468085106383,
+        "document_mrr": 0.8287234042553193,
+        "chunk_hit_at_1": 0.7021276595744681,
+        "chunk_hit_at_3": 0.8936170212765957,
+        "chunk_hit_at_5": 0.9361702127659575,
+        "chunk_mrr": 0.796808510638298,
+        "average_retrieval_latency_ms": 394.39534687219145,
+        "p95_retrieval_latency_ms": 482.43340011686087,
+        "max_retrieval_latency_ms": 505.64320012927055,
+        "retrieval_failure_count": 0,
+        "evaluation_query_count": 47,
+        "evaluation_ks": [
+          1,
+          3,
+          5
+        ]
+      },
+      "artifacts": {
+        "output_dir": "C:\\Users\\home\\Desktop\\PJ\\RAG-Project\\experiments\\C01-20261112-R3",
+        "experiment_manifest_path": "C:\\Users\\home\\Desktop\\PJ\\RAG-Project\\experiments\\C01-20261112-R3\\experiment_manifest.json",
+        "metrics_summary_path": "C:\\Users\\home\\Desktop\\PJ\\RAG-Project\\experiments\\C01-20261112-R3\\metrics_summary.json",
+        "failure_cases_path": "C:\\Users\\home\\Desktop\\PJ\\RAG-Project\\experiments\\C01-20261112-R3\\failure_cases.csv",
+        "environment_path": "C:\\Users\\home\\Desktop\\PJ\\RAG-Project\\experiments\\C01-20261112-R3\\environment.json"
+      }
+    },
+    {
+      "experiment_id": "C01-20261112-R4",
+      "status": "SUCCESS",
+      "index_reused": true,
+      "metrics_summary": {
+        "document_hit_at_1": 0.7446808510638298,
+        "document_hit_at_3": 0.9148936170212766,
+        "document_hit_at_5": 0.9574468085106383,
+        "document_mrr": 0.8287234042553193,
+        "chunk_hit_at_1": 0.7021276595744681,
+        "chunk_hit_at_3": 0.8936170212765957,
+        "chunk_hit_at_5": 0.9361702127659575,
+        "chunk_mrr": 0.796808510638298,
+        "average_retrieval_latency_ms": 345.0422488905965,
+        "p95_retrieval_latency_ms": 460.5398001149297,
+        "max_retrieval_latency_ms": 661.1537002027035,
+        "retrieval_failure_count": 0,
+        "evaluation_query_count": 47,
+        "evaluation_ks": [
+          1,
+          3,
+          5
+        ]
+      },
+      "artifacts": {
+        "output_dir": "C:\\Users\\home\\Desktop\\PJ\\RAG-Project\\experiments\\C01-20261112-R4",
+        "experiment_manifest_path": "C:\\Users\\home\\Desktop\\PJ\\RAG-Project\\experiments\\C01-20261112-R4\\experiment_manifest.json",
+        "metrics_summary_path": "C:\\Users\\home\\Desktop\\PJ\\RAG-Project\\experiments\\C01-20261112-R4\\metrics_summary.json",
+        "failure_cases_path": "C:\\Users\\home\\Desktop\\PJ\\RAG-Project\\experiments\\C01-20261112-R4\\failure_cases.csv",
+        "environment_path": "C:\\Users\\home\\Desktop\\PJ\\RAG-Project\\experiments\\C01-20261112-R4\\environment.json"
+      }
+    }
+  ],
+  "error": null
+}
