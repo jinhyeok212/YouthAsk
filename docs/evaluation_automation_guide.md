@@ -64,3 +64,20 @@ python -m src.experiments.runner --dry-run
 검색 Runtime 오류 시 저장 함수가 진단 산출물을 남긴 후 예외를 발생시킨다.
 향후 PM이 실패 상태 및 진단 저장을 Runner에서 직접 관리하도록 확장할 수 있다.
 부분 청크 평가가 필요하면 대상 질문과 집계 분모의 공통 규격을 먼저 정해야 한다.
+
+## Context Precision / Recall (qrels 기준)
+
+기존 `retrieval_metrics.calculate_context_metrics()`를 Baseline과 Runner가 공통 사용한다.
+추가 설정, API 키, 모델 호출, 재청킹 없이 검색 결과와 기존 qrels로 계산한다.
+
+- Context Precision: 정답 ID가 나온 각 순위의 Precision@rank를 평균한다.
+- Context Recall: 검색된 고유 정답 ID 수 / 전체 qrels 정답 ID 수.
+- 중복 ID는 순위를 차지하지만 정답 적중을 추가 인정하지 않는다.
+- 검색 결과가 비었거나 정답이 없으면 0이며, 질문별 점수의 산술 평균을 저장한다.
+
+Baseline 질문별 키는 `context_precision`, `context_recall`이고 요약에
+`document_` 또는 `chunk_` 접두사를 붙인다. Runner도 동일한 요약 키와 함께
+`evaluation.ks`별 `chunk_context_precision_at_5` 같은 키를 저장한다.
+같은 검색 깊이·qrels·질문 집합에서 비교하고, 기존 결과는 재평가해야 한다.
+이 Recall은 정답 청크 검색 비율이며 답변의 모든 필수 사실을 의미적으로 판정한 값은 아니다.
+테스트는 기존 `tests/test_retrieval_metrics.py`에 포함한다.

@@ -1,3 +1,0 @@
--r requirements-experiments.txt
-# Optional: imported only when semantic_context.enabled is true.
-openai>=2,<3

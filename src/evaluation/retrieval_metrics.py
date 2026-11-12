@@ -1,7 +1,7 @@
 """검색 결과의 순위를 이용해 검색 성능을 계산한다."""
 
 
-# First Relevant Rank 계산
+# Context Precision / Recall 계산
 def calculate_context_metrics(retrieved_ids: list[str], gold_ids: set[str]) -> dict[str, float]:
     """Qrels-based context AP and recall over the supplied ranked window.
 
@@ -25,6 +25,7 @@ def calculate_context_metrics(retrieved_ids: list[str], gold_ids: set[str]) -> d
     }
 
 
+# First Relevant Rank 계산
 def find_first_relevant_rank(
     retrieved_ids: list[str],
     gold_ids: set[str],

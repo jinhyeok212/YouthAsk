@@ -124,18 +124,8 @@ def evaluate_experiment(config: dict, retrieval_results: list[dict]) -> dict:
             if not 0.0 <= float(value) <= 1.0:
                 raise ValueError(f"Metric 범위 오류: {key}={value}")
 
-    result = {
+    return {
         "metrics_summary": summary,
         "metrics_by_query": by_query,
         "failure_cases": failures,
     }
-    from src.evaluation.semantic_context import evaluate_semantic_context
-
-    semantic = evaluate_semantic_context(config, retrieval_results)
-    if semantic is not None:
-        result["semantic_context"] = semantic
-        summary.update(semantic["metrics_summary"])
-        by_id = {r["query_id"]: r for r in semantic["metrics_by_query"]}
-        for row in by_query:
-            row.update(by_id[row["query_id"]])
-    return result
