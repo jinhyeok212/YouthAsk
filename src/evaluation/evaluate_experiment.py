@@ -4,6 +4,7 @@ import math
 
 from src.evaluation.failure_analyzer import classify_failure
 from src.evaluation.qrels import load_chunk_qrels, load_document_qrels
+from src.evaluation.retrieval_metrics import calculate_context_metrics
 
 
 def _first_relevant_rank(retrieved: list[str], relevant: set[str]) -> int | None:
@@ -65,6 +66,19 @@ def evaluate_experiment(config: dict, retrieval_results: list[dict]) -> dict:
         for k in ks:
             item[f"document_hit_at_{k}"] = _hit(d_rank, k)
             item[f"chunk_hit_at_{k}"] = _hit(c_rank, k)
+            for scope, ids, gold in (
+                ("document", doc_ids, doc_qrels[qid]),
+                ("chunk", chunk_ids, chunk_qrels[qid]),
+            ):
+                for metric, value in calculate_context_metrics(ids[:k], gold).items():
+                    item[f"{scope}_{metric}_at_{k}"] = value
+
+        for scope, ids, gold in (
+            ("document", doc_ids, doc_qrels[qid]),
+            ("chunk", chunk_ids, chunk_qrels[qid]),
+        ):
+            for metric, value in calculate_context_metrics(ids, gold).items():
+                item[f"{scope}_{metric}"] = value
 
         item["failure_type"] = classify_failure(item, failure_k=failure_k)
         by_query.append(item)
@@ -94,6 +108,9 @@ def evaluate_experiment(config: dict, retrieval_results: list[dict]) -> dict:
     for k in ks:
         summary[f"chunk_hit_at_{k}"] = avg(f"chunk_hit_at_{k}")
     summary["chunk_mrr"] = avg("chunk_mrr")
+    for field in by_query[0]:
+        if "_context_precision" in field or "_context_recall" in field:
+            summary[field] = avg(field)
     summary["average_retrieval_latency_ms"] = (
         sum(latencies) / len(latencies) if latencies else 0.0
     )
@@ -107,8 +124,18 @@ def evaluate_experiment(config: dict, retrieval_results: list[dict]) -> dict:
             if not 0.0 <= float(value) <= 1.0:
                 raise ValueError(f"Metric 범위 오류: {key}={value}")
 
-    return {
+    result = {
         "metrics_summary": summary,
         "metrics_by_query": by_query,
         "failure_cases": failures,
     }
+    from src.evaluation.semantic_context import evaluate_semantic_context
+
+    semantic = evaluate_semantic_context(config, retrieval_results)
+    if semantic is not None:
+        result["semantic_context"] = semantic
+        summary.update(semantic["metrics_summary"])
+        by_id = {r["query_id"]: r for r in semantic["metrics_by_query"]}
+        for row in by_query:
+            row.update(by_id[row["query_id"]])
+    return result

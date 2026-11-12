@@ -41,6 +41,14 @@ def validate_evaluation_inputs(
 
     if len(question_ids) != len(set(question_ids)):
         raise ValueError("평가 질문에 중복 query_id가 있습니다.")
+    semantic = config.get("evaluation", {}).get("semantic_context", {})
+    if semantic.get("enabled"):
+        from src.evaluation.semantic_context import load_references
+
+        references = load_references(semantic["references_path"], set(question_ids))
+        for question in questions:
+            if references[question["query_id"]]["query"] != question["query"]:
+                raise ValueError(f"Semantic reference question mismatch: {question['query_id']}")
 
     # 2) 실제 row 기반 qrels 로드
     doc_qrels = load_document_qrels(

@@ -157,6 +157,17 @@ def validate_semantics(
                 "클 수 없습니다."
             )
 
+    semantic = config.get("evaluation", {}).get("semantic_context", {})
+    if semantic.get("enabled"):
+        top_k = semantic.get("top_k")
+        if type(top_k) is not int or top_k < 1:
+            raise ConfigValidationError("semantic_context.top_k must be a positive integer")
+        if "evaluation_max_k" in retrieval and top_k > int(retrieval["evaluation_max_k"]):
+            raise ConfigValidationError("semantic_context.top_k must not exceed evaluation_max_k")
+        for key in ("references_path", "model"):
+            if not isinstance(semantic.get(key), str) or not semantic[key].strip():
+                raise ConfigValidationError(f"semantic_context.{key} is required")
+
     experiment_id = config.get("experiment_id")
     base_experiment_id = config.get("base_experiment_id")
     if experiment_id and base_experiment_id == experiment_id:
@@ -266,6 +277,9 @@ def _resolve_runtime_paths(config: dict) -> dict:
             continue
         section[key] = str(_resolve_project_path(section[key]))
 
+    semantic = resolved.get("evaluation", {}).get("semantic_context", {})
+    if semantic.get("references_path"):
+        semantic["references_path"] = str(_resolve_project_path(semantic["references_path"]))
     return resolved
 
 
@@ -323,6 +337,9 @@ def inspect_input_readiness(config: dict) -> dict:
         "document_qrels": config["evaluation"]["document_qrels_path"],
         "chunk_qrels": config["evaluation"]["chunk_qrels_path"],
     }
+    semantic = config.get("evaluation", {}).get("semantic_context", {})
+    if semantic.get("enabled"):
+        paths["semantic_references"] = semantic["references_path"]
     exists = {name: Path(path).is_file() for name, path in paths.items()}
     return {
         "files": exists,

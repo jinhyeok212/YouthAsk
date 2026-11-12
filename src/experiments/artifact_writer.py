@@ -56,6 +56,10 @@ def write_experiment_artifacts(config: dict, run_context: dict) -> dict:
         write_jsonl(stage / "traces.jsonl", retrieval)
         write_json(stage / "metrics_summary.json", evaluation["metrics_summary"])
         write_jsonl(stage / "metrics_by_query.jsonl", evaluation["metrics_by_query"])
+        if evaluation.get("semantic_context") is not None:
+            from src.evaluation.semantic_context import save_semantic_context
+
+            save_semantic_context(evaluation["semantic_context"], stage)
         write_json(stage / "environment.json", collect_environment_info())
         write_json(stage / "resolved_config.json", _config_for_artifact(config))
 

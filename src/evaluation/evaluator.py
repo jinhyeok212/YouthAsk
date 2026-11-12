@@ -12,6 +12,7 @@ from pathlib import Path
 from typing import Any, Iterable
 
 from src.evaluation.retrieval_metrics import (
+    calculate_context_metrics,
     calculate_hit_at_k,
     calculate_mean_hit_at_k,
     calculate_mrr,
@@ -194,6 +195,7 @@ def evaluate_document_queries(
             {
                 "query_id": query_id,
                 "gold_document_ids": sorted(gold_document_ids),
+                **calculate_context_metrics(retrieved_document_ids, gold_document_ids),
                 "matched_gold_document_ids": matched_gold_document_ids,
                 "first_relevant_rank": first_relevant_rank,
                 "hit_at_1": calculate_hit_at_k(first_relevant_rank, 1),
@@ -235,6 +237,8 @@ def summarize_document_metrics(
         "document_hit_at_3": document_hit_at_3,
         "document_hit_at_5": document_hit_at_5,
         "document_mrr": document_mrr,
+        "document_context_precision": sum(r["context_precision"] for r in query_metrics) / len(query_metrics),
+        "document_context_recall": sum(r["context_recall"] for r in query_metrics) / len(query_metrics),
         "top_5_success_count": top_5_success_count,
         "top_5_failure_count": top_5_failure_count,
     }
@@ -278,6 +282,7 @@ def evaluate_chunk_queries(
             {
                 "query_id": query_id,
                 "gold_chunk_ids": sorted(gold_chunk_ids),
+                **calculate_context_metrics(retrieved_chunk_ids, gold_chunk_ids),
                 "matched_gold_chunk_ids": matched_gold_chunk_ids,
                 "first_relevant_rank": first_relevant_rank,
                 "hit_at_1": calculate_hit_at_k(first_relevant_rank, 1),
@@ -308,6 +313,8 @@ def summarize_chunk_metrics(query_metrics: list[JsonObject]) -> JsonObject:
         "chunk_hit_at_3": calculate_mean_hit_at_k(hit_at_3_values),
         "chunk_hit_at_5": calculate_mean_hit_at_k(hit_at_5_values),
         "chunk_mrr": calculate_mrr(reciprocal_ranks),
+        "chunk_context_precision": sum(r["context_precision"] for r in query_metrics) / len(query_metrics),
+        "chunk_context_recall": sum(r["context_recall"] for r in query_metrics) / len(query_metrics),
         "top_5_success_count": sum(hit_at_5_values),
         "top_5_failure_count": len(query_metrics) - sum(hit_at_5_values),
     }
@@ -462,6 +469,8 @@ def run_chunk_evaluation(
     retrieval_results_path: str | Path,
     qrels_path: str | Path,
     output_dir: str | Path,
+    *,
+    semantic_config: dict | None = None,
 ) -> tuple[list[JsonObject], JsonObject, JsonObject]:
     """Chunk 평가 전체 과정을 순서대로 실행하고 결과를 저장한다."""
     # 청크 순위가 포함된 Retrieval 결과를 읽는다.
@@ -480,6 +489,17 @@ def run_chunk_evaluation(
     manifest = create_chunk_evaluation_manifest(retrieval_results, chunk_qrels)
 
     # Document 평가 결과와 섞이지 않도록 Chunk 평가 파일을 따로 저장한다.
+    if semantic_config is not None:
+        from src.evaluation.semantic_context import evaluate_semantic_context, save_semantic_context
+
+        semantic = evaluate_semantic_context(semantic_config, retrieval_results)
+        if semantic is not None:
+            summary.update(semantic["metrics_summary"])
+            by_id = {r["query_id"]: r for r in semantic["metrics_by_query"]}
+            for row in query_metrics:
+                row.update(by_id[row["query_id"]])
+            manifest["semantic_context"] = semantic["manifest"]
+            save_semantic_context(semantic, output_dir)
     save_chunk_evaluation(query_metrics, summary, manifest, output_dir)
 
     return query_metrics, summary, manifest

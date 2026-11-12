@@ -2,6 +2,29 @@
 
 
 # First Relevant Rank 계산
+def calculate_context_metrics(retrieved_ids: list[str], gold_ids: set[str]) -> dict[str, float]:
+    """Qrels-based context AP and recall over the supplied ranked window.
+
+    Precision is average precision normalized by retrieved relevant items.
+    Recall measures gold ID coverage, not answer-claim coverage. Repeated IDs
+    occupy ranks but receive no additional relevance credit.
+    """
+    if not gold_ids:
+        raise ValueError("Context metrics require non-empty gold IDs.")
+    seen: set[str] = set()
+    hits = 0
+    precision_sum = 0.0
+    for rank, item_id in enumerate(retrieved_ids, start=1):
+        if item_id in gold_ids and item_id not in seen:
+            hits += 1
+            precision_sum += hits / rank
+        seen.add(item_id)
+    return {
+        "context_precision": precision_sum / hits if hits else 0.0,
+        "context_recall": hits / len(gold_ids),
+    }
+
+
 def find_first_relevant_rank(
     retrieved_ids: list[str],
     gold_ids: set[str],
