@@ -2,15 +2,17 @@
 
 
 # Context Precision / Recall 계산
-def calculate_context_metrics(retrieved_ids: list[str], gold_ids: set[str]) -> dict[str, float]:
-    """Qrels-based context AP and recall over the supplied ranked window.
+def calculate_context_metrics(
+    retrieved_ids: list[str],
+    gold_ids: set[str],
+    required_fact_ids: set[str] | None = None,
+    chunk_fact_map: dict[str, set[str]] | None = None,
+) -> dict[str, float | None]:
+    """Rank-based precision and unique required-fact coverage.
 
-    Precision is average precision normalized by retrieved relevant items.
-    Recall measures gold ID coverage, not answer-claim coverage. Repeated IDs
-    occupy ranks but receive no additional relevance credit.
+    Missing fact annotations are unevaluated (None), never gold-ID recall.
+    A mapping associates each chunk with facts it fully supports.
     """
-    if not gold_ids:
-        raise ValueError("Context metrics require non-empty gold IDs.")
     seen: set[str] = set()
     hits = 0
     precision_sum = 0.0
@@ -21,7 +23,11 @@ def calculate_context_metrics(retrieved_ids: list[str], gold_ids: set[str]) -> d
         seen.add(item_id)
     return {
         "context_precision": precision_sum / hits if hits else 0.0,
-        "context_recall": hits / len(gold_ids),
+        "context_recall": (
+            len(set().union(*(chunk_fact_map.get(cid, set()) for cid in retrieved_ids))
+                & required_fact_ids) / len(required_fact_ids)
+            if required_fact_ids and chunk_fact_map is not None else None
+        ),
     }
 
 

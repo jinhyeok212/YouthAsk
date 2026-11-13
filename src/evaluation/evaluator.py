@@ -172,7 +172,7 @@ def evaluate_document_queries(
         # Top-5 검색 결과에서 document_id를 순위 순서대로 가져온다.
         retrieved_document_ids = [
             result["document_id"]
-            for result in retrieval_row["results"]
+            for result in ([] if retrieval_row.get("error") else retrieval_row["results"][:5])
         ]
 
         # 검색된 정답 문서 중 가장 먼저 등장한 순위를 계산한다.
@@ -195,7 +195,6 @@ def evaluate_document_queries(
             {
                 "query_id": query_id,
                 "gold_document_ids": sorted(gold_document_ids),
-                **calculate_context_metrics(retrieved_document_ids, gold_document_ids),
                 "matched_gold_document_ids": matched_gold_document_ids,
                 "first_relevant_rank": first_relevant_rank,
                 "hit_at_1": calculate_hit_at_k(first_relevant_rank, 1),
@@ -237,8 +236,6 @@ def summarize_document_metrics(
         "document_hit_at_3": document_hit_at_3,
         "document_hit_at_5": document_hit_at_5,
         "document_mrr": document_mrr,
-        "document_context_precision": sum(r["context_precision"] for r in query_metrics) / len(query_metrics),
-        "document_context_recall": sum(r["context_recall"] for r in query_metrics) / len(query_metrics),
         "top_5_success_count": top_5_success_count,
         "top_5_failure_count": top_5_failure_count,
     }
@@ -259,7 +256,7 @@ def evaluate_chunk_queries(
         # Top-5 검색 결과에서 chunk_id를 순위 순서대로 가져온다.
         retrieved_chunk_ids = [
             _require_non_empty_string(result, "chunk_id", f"{query_id} 검색 결과")
-            for result in retrieval_row["results"]
+            for result in ([] if retrieval_row.get("error") else retrieval_row["results"][:5])
         ]
 
         # 여러 Gold Chunk 중 가장 먼저 등장한 순위를 계산한다.
@@ -282,7 +279,6 @@ def evaluate_chunk_queries(
             {
                 "query_id": query_id,
                 "gold_chunk_ids": sorted(gold_chunk_ids),
-                **calculate_context_metrics(retrieved_chunk_ids, gold_chunk_ids),
                 "matched_gold_chunk_ids": matched_gold_chunk_ids,
                 "first_relevant_rank": first_relevant_rank,
                 "hit_at_1": calculate_hit_at_k(first_relevant_rank, 1),
@@ -313,11 +309,89 @@ def summarize_chunk_metrics(query_metrics: list[JsonObject]) -> JsonObject:
         "chunk_hit_at_3": calculate_mean_hit_at_k(hit_at_3_values),
         "chunk_hit_at_5": calculate_mean_hit_at_k(hit_at_5_values),
         "chunk_mrr": calculate_mrr(reciprocal_ranks),
-        "chunk_context_precision": sum(r["context_precision"] for r in query_metrics) / len(query_metrics),
-        "chunk_context_recall": sum(r["context_recall"] for r in query_metrics) / len(query_metrics),
         "top_5_success_count": sum(hit_at_5_values),
         "top_5_failure_count": len(query_metrics) - sum(hit_at_5_values),
     }
+
+
+def attach_context_metrics(config: dict, retrieval_results: list[JsonObject], evaluation: dict) -> None:
+    """Add the same reviewed evidence metrics to Baseline and Runner artifacts."""
+    from src.evaluation.validate_inputs import load_context_inputs
+
+    inputs = load_context_inputs(config)
+    if inputs is None:
+        return
+    query_ids = [r["query_id"] for r in retrieval_results]
+    if len(query_ids) != len(set(query_ids)) or set(query_ids) != set(inputs["question_ids"]):
+        raise ValueError("Context questions/retrieval mismatch or duplicate query IDs")
+    k = inputs["manifest"]["k"]
+    fields = {name: f"context_{name}_at_{k}" for name in ("precision", "recall")}
+    by_id = {r["query_id"]: r for r in evaluation["metrics_by_query"]}
+    if set(by_id) != set(query_ids) or len(by_id) != len(evaluation["metrics_by_query"]):
+        raise ValueError("Context metrics/retrieval query IDs mismatch")
+    for row in retrieval_results:
+        qid = row["query_id"]
+        facts = inputs["facts"].get(qid, {})
+        links = inputs["mapping"].get(qid, [])
+        qrels = inputs["qrels"].get(qid, [])
+        precision_ready = bool(qrels) and all(r.get("review_status") == "approved" for r in qrels)
+        facts_ready = bool(facts) and all(r.get("review_status") == "approved" for r in facts.values())
+        mapping_ready = (
+            facts_ready and {r["fact_id"] for r in links} == set(facts)
+            and all(r.get("review_status") == "approved" for r in links)
+        )
+        item = {"context_precision_status": "evaluated" if precision_ready else "unevaluated",
+                "context_recall_status": "evaluated" if mapping_ready else "unevaluated",
+                "context_precision_reason": None if precision_ready else "chunk_qrels_unreviewed",
+                "context_recall_reason": (None if mapping_ready else
+                    "required_facts_unreviewed" if not facts_ready else "chunk_fact_map_incomplete_or_unreviewed"),
+                "required_fact_ids": sorted(facts) if facts_ready else None,
+                "supported_fact_ids": None, "missing_fact_ids": None,
+                fields["precision"]: None, fields["recall"]: None}
+        if row.get("evaluation_max_k", k) < k:
+            raise ValueError(f"Source retrieval depth smaller than context k: {qid}")
+        selected = [] if row.get("error") else row["results"][:k]
+        item["context_retrieved_count"] = len(selected)
+        item["context_result_count_status"] = (
+            "execution_error" if row.get("error") else "fewer_than_k" if len(selected) < k else "expected")
+        for rank, result in enumerate(selected, 1):
+            if result.get("rank", rank) != rank or result.get("chunk_id") not in inputs["chunk_ids"]:
+                raise ValueError(f"Invalid retrieved chunk/rank: {qid}")
+        if row.get("error"):
+            for name, ready in (("precision", precision_ready), ("recall", mapping_ready)):
+                if ready:
+                    item[fields[name]] = 0.0
+                    item[f"context_{name}_status"] = "execution_error"
+                    item[f"context_{name}_reason"] = "retrieval_error"
+        else:
+            chunk_fact_map: dict[str, set[str]] = defaultdict(set)
+            for link in links:
+                if link["chunk_id"] is not None:
+                    chunk_fact_map[link["chunk_id"]].add(link["fact_id"])
+            ids = [r["chunk_id"] for r in selected]
+            scores = calculate_context_metrics(ids,
+                {r["chunk_id"] for r in qrels if r.get("relevance", 1) > 0},
+                set(facts) if mapping_ready else None, chunk_fact_map if mapping_ready else None)
+            if precision_ready:
+                item[fields["precision"]] = scores["context_precision"]
+            if mapping_ready:
+                item[fields["recall"]] = scores["context_recall"]
+                supported = set().union(*(chunk_fact_map.get(cid, set()) for cid in ids)) & set(facts)
+                item["supported_fact_ids"] = sorted(supported)
+                item["missing_fact_ids"] = sorted(set(facts) - supported)
+        by_id[qid].update(item)
+    summary = evaluation["metrics_summary"]
+    summary["context_total_query_count"] = len(query_ids)
+    summary["context_metrics_version"] = inputs["manifest"]["version"]
+    summary["context_k"] = k
+    for name, field in fields.items():
+        values = [r[field] for r in by_id.values() if r[field] is not None]
+        summary[field] = sum(values) / len(values) if values else None
+        summary[f"context_{name}_evaluated_query_count"] = len(values)
+        summary[f"context_{name}_unevaluated_query_count"] = len(query_ids) - len(values)
+        summary[f"context_{name}_status"] = (
+            "complete" if len(values) == len(query_ids) else "partial" if values else "unevaluated")
+    evaluation["context_metrics"] = inputs["manifest"]
 
 
 def create_evaluation_manifest(
@@ -469,6 +543,8 @@ def run_chunk_evaluation(
     retrieval_results_path: str | Path,
     qrels_path: str | Path,
     output_dir: str | Path,
+    *,
+    context_config: dict | None = None,
 ) -> tuple[list[JsonObject], JsonObject, JsonObject]:
     """Chunk 평가 전체 과정을 순서대로 실행하고 결과를 저장한다."""
     # 청크 순위가 포함된 Retrieval 결과를 읽는다.
@@ -487,6 +563,11 @@ def run_chunk_evaluation(
     manifest = create_chunk_evaluation_manifest(retrieval_results, chunk_qrels)
 
     # Document 평가 결과와 섞이지 않도록 Chunk 평가 파일을 따로 저장한다.
+    if context_config is not None:
+        evaluation = {"metrics_by_query": query_metrics, "metrics_summary": summary}
+        attach_context_metrics(context_config, retrieval_results, evaluation)
+        if "context_metrics" in evaluation:
+            manifest["context_metrics"] = evaluation["context_metrics"]
     save_chunk_evaluation(query_metrics, summary, manifest, output_dir)
 
     return query_metrics, summary, manifest

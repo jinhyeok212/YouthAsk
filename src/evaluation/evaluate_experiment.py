@@ -4,7 +4,7 @@ import math
 
 from src.evaluation.failure_analyzer import classify_failure
 from src.evaluation.qrels import load_chunk_qrels, load_document_qrels
-from src.evaluation.retrieval_metrics import calculate_context_metrics
+from src.evaluation.evaluator import attach_context_metrics
 
 
 def _first_relevant_rank(retrieved: list[str], relevant: set[str]) -> int | None:
@@ -49,16 +49,17 @@ def evaluate_experiment(config: dict, retrieval_results: list[dict]) -> dict:
             raise ValueError(f"Chunk qrels 누락: query_id={qid}")
 
         runtime_error = row.get("error")
-        doc_ids = [str(r.get("document_id", "")) for r in row["results"]]
-        chunk_ids = [str(r.get("chunk_id", "")) for r in row["results"]]
+        results = [] if runtime_error else row["results"]
+        doc_ids = [str(r.get("document_id", "")) for r in results]
+        chunk_ids = [str(r.get("chunk_id", "")) for r in results]
         d_rank = _first_relevant_rank(doc_ids, doc_qrels[qid])
         c_rank = _first_relevant_rank(chunk_ids, chunk_qrels[qid])
 
         item = {
             "query_id": qid,
-            "document_mrr": _mrr(d_rank),
+            "document_mrr": _mrr(d_rank) if d_rank is not None and d_rank <= 5 else 0.0,
             "document_first_relevant_rank": d_rank,
-            "chunk_mrr": _mrr(c_rank),
+            "chunk_mrr": _mrr(c_rank) if c_rank is not None and c_rank <= 5 else 0.0,
             "chunk_first_relevant_rank": c_rank,
             "retrieval_latency_ms": float(row["retrieval_latency_ms"]),
             "runtime_error": runtime_error,
@@ -66,19 +67,6 @@ def evaluate_experiment(config: dict, retrieval_results: list[dict]) -> dict:
         for k in ks:
             item[f"document_hit_at_{k}"] = _hit(d_rank, k)
             item[f"chunk_hit_at_{k}"] = _hit(c_rank, k)
-            for scope, ids, gold in (
-                ("document", doc_ids, doc_qrels[qid]),
-                ("chunk", chunk_ids, chunk_qrels[qid]),
-            ):
-                for metric, value in calculate_context_metrics(ids[:k], gold).items():
-                    item[f"{scope}_{metric}_at_{k}"] = value
-
-        for scope, ids, gold in (
-            ("document", doc_ids, doc_qrels[qid]),
-            ("chunk", chunk_ids, chunk_qrels[qid]),
-        ):
-            for metric, value in calculate_context_metrics(ids, gold).items():
-                item[f"{scope}_{metric}"] = value
 
         item["failure_type"] = classify_failure(item, failure_k=failure_k)
         by_query.append(item)
@@ -108,9 +96,6 @@ def evaluate_experiment(config: dict, retrieval_results: list[dict]) -> dict:
     for k in ks:
         summary[f"chunk_hit_at_{k}"] = avg(f"chunk_hit_at_{k}")
     summary["chunk_mrr"] = avg("chunk_mrr")
-    for field in by_query[0]:
-        if "_context_precision" in field or "_context_recall" in field:
-            summary[field] = avg(field)
     summary["average_retrieval_latency_ms"] = (
         sum(latencies) / len(latencies) if latencies else 0.0
     )
@@ -124,8 +109,10 @@ def evaluate_experiment(config: dict, retrieval_results: list[dict]) -> dict:
             if not 0.0 <= float(value) <= 1.0:
                 raise ValueError(f"Metric 범위 오류: {key}={value}")
 
-    return {
+    result = {
         "metrics_summary": summary,
         "metrics_by_query": by_query,
         "failure_cases": failures,
     }
+    attach_context_metrics(config, retrieval_results, result)
+    return result
