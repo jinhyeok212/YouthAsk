@@ -25,6 +25,13 @@ evaluation:
   document_qrels_path: data/evaluation/eval_full_v1/qrels.jsonl
   chunk_qrels_path: data/evaluation/eval_full_v1/qrels_chunk.jsonl
   ks: [1, 3, 5]
+  # Enable after the required facts and this chunking's mapping are reviewed.
+  context_metrics:
+    enabled: false
+    version: context_eval_v1
+    k: 5
+    required_facts_path: data/evaluation/eval_full_v1/required_facts.jsonl
+    chunk_fact_map_path: data/evaluation/eval_full_v1/c2_section_800/chunk_fact_map.jsonl
 
 embedding:
   model: nlpai-lab/KURE-v1

@@ -1,6 +1,36 @@
 """검색 결과의 순위를 이용해 검색 성능을 계산한다."""
 
 
+# Context Precision / Recall 계산
+def calculate_context_metrics(
+    retrieved_ids: list[str],
+    gold_ids: set[str],
+    required_fact_ids: set[str] | None = None,
+    chunk_fact_map: dict[str, set[str]] | None = None,
+) -> dict[str, float | None]:
+    """Rank-based precision and unique required-fact coverage.
+
+    Missing fact annotations are unevaluated (None), never gold-ID recall.
+    A mapping associates each chunk with facts it fully supports.
+    """
+    seen: set[str] = set()
+    hits = 0
+    precision_sum = 0.0
+    for rank, item_id in enumerate(retrieved_ids, start=1):
+        if item_id in gold_ids and item_id not in seen:
+            hits += 1
+            precision_sum += hits / rank
+        seen.add(item_id)
+    return {
+        "context_precision": precision_sum / hits if hits else 0.0,
+        "context_recall": (
+            len(set().union(*(chunk_fact_map.get(cid, set()) for cid in retrieved_ids))
+                & required_fact_ids) / len(required_fact_ids)
+            if required_fact_ids and chunk_fact_map is not None else None
+        ),
+    }
+
+
 # First Relevant Rank 계산
 def find_first_relevant_rank(
     retrieved_ids: list[str],

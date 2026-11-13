@@ -64,3 +64,81 @@ python -m src.experiments.runner --dry-run
 검색 Runtime 오류 시 저장 함수가 진단 산출물을 남긴 후 예외를 발생시킨다.
 향후 PM이 실패 상태 및 진단 저장을 Runner에서 직접 관리하도록 확장할 수 있다.
 부분 청크 평가가 필요하면 대상 질문과 집계 분모의 공통 규격을 먼저 정해야 한다.
+
+## Context Precision / Recall (PM 운영 기준 반영)
+
+기존 Hit@k·MRR은 유지하고, 근거 지표는 검수 입력으로 활성화한다.
+LLM·API·재청킹은 필요 없다. 이전 정답 청크 ID 검색 비율을 Context Recall로
+저장하던 계산은 제거했다. 이전 점수와 새 점수는 같은 지표로 비교하지 않는다.
+
+- Precision@k: 관련 청크가 나온 각 순위의 Precision@rank 평균.
+- Recall@k: 상위 k개 청크가 뒷받침하는 고유 필수 정보 수 / 전체 필수 정보 수.
+- 동일 사실이 여러 청크에 있어도 한 번만 센다. 연결 하나는 그 사실 전체를
+  지원한다는 뜻이며, 부분 정보만 있는 청크는 완전한 지원으로 등록하지 않는다.
+- MRR은 Top-5 첫 정답의 역수이며 검색 깊이가 커져도 6위부터는 0이다.
+
+### YAML과 검수 입력
+
+기존 `evaluation`에 추가한다. 경로는 프로젝트 기준이며 `{chunking_version}`도
+지원한다. `1 ≤ k ≤ retrieval.evaluation_max_k`를 검증하며 운영표 비교에는 k=5를 쓴다.
+실제 검수 입력이 준비되기 전 기본 설정은 비활성 상태다.
+
+```yaml
+context_metrics:
+  enabled: true
+  version: context_eval_v1
+  k: 5
+  required_facts_path: data/evaluation/eval_full_v1/required_facts.jsonl
+  chunk_fact_map_path: data/evaluation/eval_full_v1/c2_section_800/chunk_fact_map.jsonl
+```
+
+`required_facts.jsonl`은 모든 청킹·모델에서 동일 버전을 쓴다(한 행에 한 사실).
+
+```json
+{"query_id":"q1","fact_id":"age","fact_text":"A 정책은 만 19세 이상 신청 가능하다.","document_id":"d1","source_location":"eligibility","review_status":"approved"}
+{"query_id":"q1","fact_id":"period","fact_text":"신청 마감일은 11월 30일이다.","document_id":"d1","source_location":"application_period","review_status":"approved"}
+```
+
+`chunk_fact_map.jsonl`은 청킹별로 검수한다. 같은 사실을 지원하는 청크가 여러 개면
+행을 추가한다. 모델만 변경하는 비교에는 같은 연결표를 사용한다.
+
+```json
+{"query_id":"q1","fact_id":"age","chunk_id":"c1","chunking_version":"c2_section_800_v1","review_status":"approved"}
+{"query_id":"q1","fact_id":"period","chunk_id":"c3","chunking_version":"c2_section_800_v1","review_status":"approved"}
+```
+
+검수한 결과 지원 청크가 전혀 없으면 해당 사실의 연결에 `chunk_id: null`을 기록한다.
+연결 행 누락은 '지원 없음'이 아니라 '검수 부족'이다. null 행과 실제 청크 연결을
+같은 사실에 함께 등록하면 오류다. 청크 qrels에도 `review_status`를 기록한다.
+해당 질문의 관련 청크 목록을 충분히 검수해 목록 밖을 비관련으로 판정할 수 있을 때만
+모든 행을 approved로 바꾼다. 기존 정답 청크가 있다는 이유로 자동 승인하지 않는다.
+
+검수 상태는 pending/approved/rejected이고 필드 생략은 pending이다.
+입력에 `context_version`이 있으면 YAML의 version과 일치해야 한다.
+연결표의 `chunking_version`은 필수다. 질문·사실·청크·문서 참조, 중복·버전·원문 위치
+오류와 파일 누락은 실행 전에 오류로 중단한다. 승인된 사실 일부만 분모로 골라 쓰지 않는다.
+문서 담당은 필수 정보를, 청킹 담당은 청크 연결표를 작성하고 평가 담당이 검수한다.
+
+### 집계와 저장
+
+| 구분 | 처리 |
+| --- | --- |
+| 검수 후 정상 검색 | 정의대로 계산. 빈 결과·근거 미검색은 0 |
+| 질문별 검색 오류 | 검수 가능한 지표를 0점으로 포함. execution_error 및 사유 저장 |
+| 검수 부족 | null 및 사유 저장. 해당 지표의 평가 질문 수에서 제외 |
+| 질문 누락·중복·입력 오류 | 공식 집계 중단 후 수정·재실행 |
+
+질문별 오류도 검수 자체가 부족한 지표는 미평가로 남긴다. 오류 행의 충족·누락 정보는
+판정하지 않고 null로 남긴다. 일부만 검수한 평균은 부분 평가이며 전체 공식 평가가 아니다.
+
+기존 `metrics_by_query.jsonl`에 `context_precision_at_5`, `context_recall_at_5`,
+`context_*_status`, `context_*_reason`, `required_fact_ids`, `supported_fact_ids`,
+`missing_fact_ids`를 저장한다. `metrics_summary.json`에는 평균, 평가/미평가 질문 수,
+전체 질문 수, complete/partial/unevaluated 상태와 기준 버전을 저장한다.
+`experiment_manifest.json`의 `evaluation.context_metrics`에는 경로·SHA256·청킹 버전·k를 남긴다.
+
+Runner는 인덱스 처리 전 입력을 검증한다. Baseline도
+`run_chunk_evaluation(..., context_config=config)`로 같은 계산을 사용하고 기존
+`chunk_metrics.jsonl`, `chunk_summary.json`, `chunk_evaluation_manifest.json`에 저장한다.
+원본 검색을 재평가할 때 원본 실행 ID를 유지하고 새 평가 결과는 별도 폴더에 저장한다.
+테스트는 기존 `tests/test_retrieval_metrics.py`에 통합했다.
