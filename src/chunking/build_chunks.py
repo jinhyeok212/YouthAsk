@@ -1,134 +1,279 @@
 from __future__ import annotations
 
 from pathlib import Path
+from typing import Any
 
-from src.chunking.build_chunk_qrels import validate_chunk_qrels
-from src.common.io import load_json, read_jsonl, sha256_file, utc_now_iso, write_json
-
-
-def _chunk_signature(config: dict, dataset_info: dict) -> dict:
-    c = config["chunking"]
-    return {
-        "dataset_version": config["dataset"]["version"],
-        "preprocessing_version": config["dataset"]["preprocessing_version"],
-        "dataset_sha256": dataset_info["sha256"],
-        "chunking_version": c["version"],
-        "strategy": c["strategy"],
-        "size": int(c["size"]),
-        "overlap": int(c["overlap"]),
-        "unit": c["unit"],
-        "target_field": c["target_field"],
-    }
-
-
-def _validate_existing_chunks(chunk_path: Path, document_ids: set[str]) -> int:
-    rows = read_jsonl(chunk_path)
-    if not rows:
-        raise ValueError("chunks.jsonl이 비어 있습니다.")
-
-    seen: set[str] = set()
-    per_doc_last_index: dict[str, int] = {}
-
-    for row in rows:
-        cid = str(row.get("chunk_id", "")).strip()
-        did = str(row.get("document_id", "")).strip()
-        text = str(row.get("text", "")).strip()
-        idx = row.get("chunk_index")
-
-        if not cid or not did or not text:
-            raise ValueError(
-                f"빈 Chunk 필드가 있습니다: chunk_id={cid}, document_id={did}"
-            )
-        if cid in seen:
-            raise ValueError(f"중복 chunk_id가 존재합니다: {cid}")
-        if did not in document_ids:
-            raise ValueError(
-                f"존재하지 않는 document_id를 참조합니다: chunk_id={cid}, document_id={did}"
-            )
-        if not isinstance(idx, int) or idx < 0:
-            raise ValueError(
-                f"잘못된 chunk_index: chunk_id={cid}, chunk_index={idx}"
-            )
-
-        previous = per_doc_last_index.get(did, -1)
-        if idx != previous + 1:
-            raise ValueError(
-                f"청크 순서 오류: document_id={did}, expected={previous + 1}, actual={idx}"
-            )
-
-        per_doc_last_index[did] = idx
-        seen.add(cid)
-
-    return len(rows)
+from src.chunking.build_chunk_qrels import resolve_chunk_qrels, validate_document_qrels_rows
+from src.chunking.generators import chunk_id_scheme, generate_chunks, normalize_strategy
+from src.chunking.manifest import (
+    StagedOutputs,
+    build_manifest,
+    check_manifest,
+    chunk_signature,
+    configured_chunk_paths,
+    generated_chunk_signature,
+    guard_partial_outputs,
+    project_path,
+    read_json,
+    read_jsonl,
+    recover_interrupted_commits,
+    sha256_file,
+    utc_now_iso,
+    write_json,
+    write_jsonl,
+)
+from src.chunking.validate_chunks import validate_chunks
 
 
-def build_chunks(config: dict, dataset_info: dict) -> dict:
-    """Validate and register the team's pre-built C2 chunks.
+CHUNKING_MODES = ("reuse", "generate")
 
-    Team-ready v4 deliberately does NOT auto-create chunks. The evaluated
-    qrels_chunk.jsonl is tied to deterministic C2 chunk IDs, so generating a
-    different fallback chunk-ID convention inside the experiment runner would
-    silently invalidate the evaluation set.
-    """
-    c = config["chunking"]
-    chunk_path = Path(c["chunk_path"])
-    manifest_path = Path(c["manifest_path"])
+# generate 모드 signature에만 있는 필드. reuse 모드는 이 필드를 빼고 비교한다.
+_GENERATE_ONLY_SIGNATURE_FIELDS = ("mode", "chunk_id_scheme")
 
+
+def chunking_mode(config: dict[str, Any]) -> str:
+    mode = str(config["chunking"].get("mode", "reuse"))
+    if mode not in CHUNKING_MODES:
+        raise ValueError(f"지원하지 않는 chunking.mode입니다: {mode} (허용: {CHUNKING_MODES})")
+    return mode
+
+
+def _configured_document_qrels_path(config: dict[str, Any]) -> Path | None:
+    value = str(config.get("evaluation", {}).get("document_qrels_path") or "").strip()
+    return project_path(value) if value else None
+
+
+def _reuse_existing_chunks(
+    config: dict[str, Any],
+    dataset_info: dict[str, Any],
+    *,
+    document_path: Path,
+    chunk_path: Path,
+    manifest_path: Path,
+    chunk_qrels_path: Path,
+) -> dict[str, Any]:
+    """검수된 기존 청크(C2 등)를 검증·등록한다. 청크를 생성하지 않는다."""
+    chunking = config["chunking"]
     if not chunk_path.exists():
         raise FileNotFoundError(
-            "검수된 chunks.jsonl이 필요합니다. Team Ready Runner는 qrels와의 ID 정합성을 "
+            "검수된 chunks.jsonl이 필요합니다. reuse 모드는 qrels와의 ID 정합성을 "
             f"보호하기 위해 청크를 자동 생성하지 않습니다: {chunk_path}"
         )
 
-    documents = read_jsonl(dataset_info["document_path"])
-    document_ids = {str(d["document_id"]) for d in documents}
-    current_sig = _chunk_signature(config, dataset_info)
-    count = _validate_existing_chunks(chunk_path, document_ids)
-    actual_sha = sha256_file(chunk_path)
-
-    if manifest_path.exists():
-        old = load_json(manifest_path)
-        old_sig = old.get("signature", {})
-        if old_sig != current_sig:
-            raise ValueError(
-                "기존 Chunk Manifest 설정과 현재 YAML이 다릅니다. 기존 chunks.jsonl을 "
-                "덮어쓰지 않습니다. 올바른 chunking.version/config를 사용하세요."
-            )
-        manifest_sha = old.get("chunk_sha256")
-        if manifest_sha and manifest_sha != actual_sha:
-            raise ValueError(
-                "Chunk Manifest SHA256 불일치: "
-                f"manifest={manifest_sha}, actual={actual_sha}"
-            )
-    else:
-        write_json(
-            manifest_path,
-            {
-                "signature": current_sig,
-                "chunk_path": str(chunk_path),
-                "chunk_count": count,
-                "chunk_sha256": actual_sha,
-                "created_at_utc": utc_now_iso(),
-                "bootstrap_from_existing": True,
-            },
-        )
-
-    qrels_path = Path(config["evaluation"]["chunk_qrels_path"])
-    if not qrels_path.exists():
-        raise FileNotFoundError(
-            f"검수된 qrels_chunk.jsonl이 필요합니다: {qrels_path}"
-        )
-
-    validate_chunk_qrels(
-        chunk_qrels_path=str(qrels_path),
-        chunk_path=str(chunk_path),
+    validation = validate_chunks(
+        document_path,
+        chunk_path,
+        chunk_size=int(chunking["size"]),
+        overlap=int(chunking["overlap"]),
+        strict_max_length=False,
+        require_full_coverage=False,
     )
+    signature = chunk_signature(config, dataset_info)
+    chunk_sha = sha256_file(chunk_path)
+
+    staged = StagedOutputs(journal_dir=manifest_path.parent)
+    try:
+        if manifest_path.exists():
+            manifest = read_json(manifest_path)
+            old_signature = {
+                key: value
+                for key, value in manifest.get("signature", {}).items()
+                if key not in _GENERATE_ONLY_SIGNATURE_FIELDS
+            }
+            if old_signature != signature:
+                raise ValueError(
+                    "기존 Chunk Manifest 설정과 현재 YAML이 다릅니다. 기존 chunks.jsonl을 "
+                    "덮어쓰지 않습니다. 올바른 chunking.version/config를 사용하세요."
+                )
+            manifest_sha = manifest.get("chunk_sha256")
+            if manifest_sha and manifest_sha != chunk_sha:
+                raise ValueError(
+                    "Chunk Manifest SHA256 불일치: "
+                    f"manifest={manifest_sha}, actual={chunk_sha}"
+                )
+        else:
+            write_json(
+                staged.path_for(manifest_path),
+                {
+                    "signature": signature,
+                    "chunk_path": str(chunk_path),
+                    "chunk_count": validation["chunk_count"],
+                    "chunk_sha256": chunk_sha,
+                    "created_at_utc": utc_now_iso(),
+                    "bootstrap_from_existing": True,
+                },
+            )
+
+        qrels_result = resolve_chunk_qrels(
+            chunk_qrels_path=chunk_qrels_path,
+            chunk_path=chunk_path,
+            chunks=read_jsonl(chunk_path),
+            chunk_sha256=chunk_sha,
+            chunking_version=str(chunking["version"]),
+            # 원본 추적 중인 확정본(generate 결과, approve한 C2)은 reuse에서도 원본 변경을 확인한다.
+            document_qrels_path=_configured_document_qrels_path(config),
+            allow_auto=False,
+            bootstrap_status="legacy_bootstrap",
+            staged=staged,
+        )
+        staged.commit()
+    finally:
+        staged.cleanup()
+
+    return {
+        "chunk_count": validation["chunk_count"],
+        "chunk_sha256": chunk_sha,
+        "chunks_reused": True,
+        "qrels_result": qrels_result,
+    }
+
+
+def _generate_or_reuse_generated_chunks(
+    config: dict[str, Any],
+    dataset_info: dict[str, Any],
+    *,
+    document_path: Path,
+    chunk_path: Path,
+    manifest_path: Path,
+    chunk_qrels_path: Path,
+) -> dict[str, Any]:
+    """조건별 청크를 생성한다. 같은 조건의 산출물이 있으면 재사용한다.
+
+    결과는 임시 파일에 먼저 쓰고 검증이 끝난 뒤 반영한다(manifest가 마지막).
+    """
+    chunking = config["chunking"]
+    version = str(chunking["version"])
+    strategy = normalize_strategy(str(chunking["strategy"]))
+    size = int(chunking["size"])
+    overlap = int(chunking["overlap"])
+
+    if version.startswith("c2_"):
+        raise ValueError(
+            "generate 모드에서는 c2_ 로 시작하는 chunking.version을 쓸 수 없습니다. "
+            "기존 C2 청크는 생성 규칙이 달라(chunk_id/section 체계) mode: reuse로만 사용합니다: "
+            f"{version}"
+        )
+
+    scheme = chunk_id_scheme(strategy)
+    signature = generated_chunk_signature(config, dataset_info, scheme)
+    document_qrels_path = project_path(config["evaluation"]["document_qrels_path"])
+    guard_partial_outputs(manifest_path, chunk_path)
+
+    staged = StagedOutputs(journal_dir=manifest_path.parent)
+    try:
+        reused = manifest_path.exists()
+        if reused:
+            check_manifest(manifest_path, chunk_path, signature)
+            chunk_file = chunk_path
+            chunks = read_jsonl(chunk_path)
+        else:
+            # 출력 파일을 쓰기 전에 검증 가능한 입력부터 확인한다.
+            if not chunk_qrels_path.exists():
+                if not document_qrels_path.exists():
+                    raise ValueError(f"문서 qrels 파일이 없습니다: {document_qrels_path}")
+                validate_document_qrels_rows(read_jsonl(document_qrels_path))
+            chunks = generate_chunks(
+                read_jsonl(document_path),
+                version=version,
+                strategy=strategy,
+                size=size,
+                overlap=overlap,
+                unit=str(chunking.get("unit", "characters")),
+                target_field=str(chunking["target_field"]),
+            )
+            chunk_file = staged.path_for(chunk_path)
+            write_jsonl(chunk_file, chunks)
+
+        validation = validate_chunks(
+            document_path,
+            chunk_file,
+            chunk_size=size,
+            overlap=overlap,
+            strict_max_length=strategy == "fixed",
+            coverage_target_field=str(chunking["target_field"]),
+        )
+        chunk_sha = sha256_file(chunk_file)
+
+        qrels_result = resolve_chunk_qrels(
+            chunk_qrels_path=chunk_qrels_path,
+            chunk_path=chunk_file,
+            chunks=chunks,
+            chunk_sha256=chunk_sha,
+            chunking_version=version,
+            document_qrels_path=document_qrels_path,
+            allow_auto=True,
+            bootstrap_status="reviewed",
+            staged=staged,
+        )
+
+        if not reused:
+            write_json(
+                staged.path_for(manifest_path),
+                build_manifest(
+                    config=config,
+                    dataset_info=dataset_info,
+                    signature=signature,
+                    document_path=document_path,
+                    chunk_path=chunk_path,
+                    chunk_sha256=chunk_sha,
+                    chunk_count=validation["chunk_count"],
+                    validation=validation,
+                    scheme=scheme,
+                ),
+            )
+        staged.commit()
+    finally:
+        staged.cleanup()
+
+    return {
+        "chunk_count": validation["chunk_count"],
+        "chunk_sha256": chunk_sha,
+        "chunks_reused": reused,
+        "qrels_result": qrels_result,
+    }
+
+
+def build_chunks(config: dict[str, Any], dataset_info: dict[str, Any]) -> dict[str, Any]:
+    """Prepare chunks and chunk qrels for the experiment runner.
+
+    경로는 YAML 계약(chunking.chunk_path, chunking.manifest_path,
+    evaluation.chunk_qrels_path)을 그대로 쓴다. 반환 경로는 config 경로와 같다.
+
+    - mode: reuse (기본) — 검수된 기존 청크/qrels를 검증·등록한다.
+    - mode: generate — 조건별 청크를 생성하고 근거 기반 qrels 후보를 만든다.
+      근거가 부족하면 chunk_qrels_status=review_required를 반환한다.
+    """
+    mode = chunking_mode(config)
+    document_path = project_path(dataset_info.get("document_path") or config["dataset"]["document_path"])
+    chunk_path, manifest_path, chunk_qrels_path = configured_chunk_paths(config)
+    # 이전 실행이 파일 반영 도중 끝났다면 부분 산출물 검사보다 먼저 되돌린다.
+    recover_interrupted_commits(manifest_path.parent)
+
+    prepare = _reuse_existing_chunks if mode == "reuse" else _generate_or_reuse_generated_chunks
+    prepared = prepare(
+        config,
+        dataset_info,
+        document_path=document_path,
+        chunk_path=chunk_path,
+        manifest_path=manifest_path,
+        chunk_qrels_path=chunk_qrels_path,
+    )
+    qrels_result = prepared["qrels_result"]
 
     return {
         "chunk_path": str(chunk_path),
         "manifest_path": str(manifest_path),
-        "chunk_count": count,
-        "chunk_qrels_path": str(qrels_path),
-        "chunk_sha256": actual_sha,
+        "chunk_count": prepared["chunk_count"],
+        "chunk_qrels_path": str(chunk_qrels_path),
+        "chunk_qrels_status": qrels_result["status"],
+        "chunk_qrels_review_status": qrels_result["review_status"],
+        "chunk_qrels_candidates_path": qrels_result["candidates_path"],
+        "chunk_qrels_review_required_path": qrels_result["review_required_path"],
+        "chunk_qrels_meta_path": qrels_result["meta_path"],
+        "chunk_qrels_mapped_row_count": qrels_result["mapped_row_count"],
+        "chunk_qrels_review_required_count": qrels_result["review_required_count"],
+        "chunk_sha256": prepared["chunk_sha256"],
         "dataset_sha256": dataset_info["sha256"],
+        "chunking_mode": mode,
+        "chunks_reused": prepared["chunks_reused"],
     }

@@ -7,6 +7,7 @@ from typing import Any
 from jsonschema import Draft202012Validator
 
 from src.common.io import load_json, load_yaml
+from src.chunking.manifest import expand_chunking_path
 from src.common.paths import resolve_cli_path, resolve_project_path as _resolve_project_path
 
 
@@ -119,6 +120,25 @@ def validate_semantics(
     """Validate cross-field rules shared by legacy and v4 configs."""
     chunking = config.get("chunking", {})
     retrieval = config.get("retrieval", {})
+
+    mode = chunking.get("mode", "reuse")
+    version = str(chunking.get("version", ""))
+    if mode == "generate" and version.startswith("c2_"):
+        raise ConfigValidationError(
+            "chunking.mode=generate에서는 c2_ 로 시작하는 chunking.version을 쓸 수 없습니다. "
+            "기존 C2 청크는 생성 규칙이 달라 mode: reuse로만 사용합니다. "
+            f"현재 값: version={version}"
+        )
+
+    for parent, key in _PATH_FIELDS:
+        value = config.get(parent, {}).get(key) if isinstance(config.get(parent), dict) else None
+        if value in (None, ""):
+            continue
+        leftover = expand_chunking_path(value, version)
+        if "{" in leftover or "}" in leftover:
+            raise ConfigValidationError(
+                f"{parent}.{key}에는 {{chunking_version}} 자리표시자만 사용할 수 있습니다: {value}"
+            )
 
     if "size" in chunking and "overlap" in chunking:
         size = int(chunking["size"])
@@ -254,7 +274,9 @@ def validate_experiment_config(
 # v4 runtime API
 # ---------------------------------------------------------------------------
 def _resolve_runtime_paths(config: dict) -> dict:
+    """경로를 한 번만 확정한다. 이후 모든 단계는 이 경로를 그대로 사용한다."""
     resolved = deepcopy(config)
+    chunking_version = str(resolved.get("chunking", {}).get("version", ""))
 
     for parent, key in _PATH_FIELDS:
         section = resolved.get(parent)
@@ -264,7 +286,9 @@ def _resolve_runtime_paths(config: dict) -> dict:
             or section[key] in (None, "")
         ):
             continue
-        section[key] = str(_resolve_project_path(section[key]))
+        section[key] = str(
+            _resolve_project_path(expand_chunking_path(section[key], chunking_version))
+        )
 
     return resolved
 
@@ -295,7 +319,7 @@ def load_and_validate_config(
     ]
     if missing_v4:
         raise ConfigValidationError(
-            "v4 실행에는 기존 chunks.jsonl과 chunk manifest가 필요합니다: "
+            "v4 실행에는 chunks.jsonl과 chunk manifest 경로 설정이 필요합니다: "
             + ", ".join(f"chunking.{name}" for name in missing_v4)
         )
 
@@ -324,7 +348,12 @@ def inspect_input_readiness(config: dict) -> dict:
         "chunk_qrels": config["evaluation"]["chunk_qrels_path"],
     }
     exists = {name: Path(path).is_file() for name, path in paths.items()}
+
+    # generate 모드는 chunks/chunk qrels를 실행 중 만들 수 있으므로 필수 입력이 아니다.
+    mode = config["chunking"].get("mode", "reuse")
+    required = [name for name in paths if mode != "generate" or name not in {"chunks", "chunk_qrels"}]
     return {
+        "chunking_mode": mode,
         "files": exists,
-        "input_files_ready": all(exists.values()),
+        "input_files_ready": all(exists[name] for name in required),
     }

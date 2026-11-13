@@ -57,6 +57,48 @@ def _assert_output_available(config: dict) -> None:
         )
 
 
+class ChunkQrelsReviewRequired(RuntimeError):
+    """Chunk qrels 검수가 끝나지 않아 chunk 평가를 진행할 수 없는 상태."""
+
+
+def _same_path(a: str, b: str) -> bool:
+    return Path(a).resolve() == Path(b).resolve()
+
+
+def _assert_chunk_paths_consistent(config: dict, chunk_info: dict) -> None:
+    """build_chunks가 반환한 경로와 후속 단계가 읽을 config 경로가 같은지 확인한다.
+
+    후속 단계(입력 검증, 평가, 산출물 기록)는 config 경로를 읽는다.
+    두 경로가 다르면 새로 만든 파일 대신 다른 파일로 평가하게 된다.
+    """
+    expected = {
+        "chunk_path": config.get("chunking", {}).get("chunk_path"),
+        "manifest_path": config.get("chunking", {}).get("manifest_path"),
+        "chunk_qrels_path": config.get("evaluation", {}).get("chunk_qrels_path"),
+    }
+    for key, configured in expected.items():
+        if configured and not _same_path(str(chunk_info[key]), str(configured)):
+            raise RuntimeError(
+                f"chunk_info.{key}와 설정 경로가 다릅니다. 후속 단계가 다른 파일을 읽게 됩니다: "
+                f"chunk_info={chunk_info[key]}, config={configured}"
+            )
+
+
+def _assert_chunk_qrels_ready(chunk_info: dict) -> None:
+    """검수 필요 상태면 비용이 큰 Index/Embedding 전에 중단한다."""
+    if chunk_info.get("chunk_qrels_status", "ready") == "ready":
+        return
+    raise ChunkQrelsReviewRequired(
+        "Chunk qrels 검수가 필요합니다. chunk 평가를 진행하지 않고 Index 생성 전에 중단합니다.\n"
+        f"- 검수 대상: {chunk_info.get('chunk_qrels_review_required_path')} "
+        f"({chunk_info.get('chunk_qrels_review_required_count')}건)\n"
+        f"- 자동 매핑 후보: {chunk_info.get('chunk_qrels_candidates_path')} "
+        f"({chunk_info.get('chunk_qrels_mapped_row_count')}건)\n"
+        f"- 검수 완료 후 저장 위치: {chunk_info.get('chunk_qrels_path')}\n"
+        "검수한 정답을 위 위치에 저장한 뒤 같은 설정으로 다시 실행하세요."
+    )
+
+
 def _configure_logging(config: dict) -> Path:
     output_root = Path(config.get("output", {}).get("root", "experiments"))
     log_dir = output_root / ".runs"
@@ -87,6 +129,8 @@ def run_pipeline(config: dict) -> dict:
         logging.info("[2/6] Chunk validation/register 시작")
         chunk_info = build_chunks(config, dataset_info)
         validate_chunk_info(chunk_info)
+        _assert_chunk_paths_consistent(config, chunk_info)
+        _assert_chunk_qrels_ready(chunk_info)
 
         logging.info("[3/6] Evaluation input validation 시작")
         evaluation_info = validate_evaluation_inputs(config, dataset_info, chunk_info)
@@ -249,6 +293,7 @@ def run_experiment(
 
     dataset_info = stage_functions["validate_documents"](config)
     chunk_info = stage_functions["build_chunks"](config, dataset_info)
+    _assert_chunk_qrels_ready(chunk_info)
     index_info = stage_functions["resolve_index"](config, chunk_info)
     retrieval_results = stage_functions["run_batch_retrieval"](config, index_info)
     evaluation = stage_functions["evaluate_experiment"](config, retrieval_results)
@@ -318,6 +363,7 @@ def main() -> None:
             json.dumps(
                 {
                     "experiment_id": config["experiment_id"],
+                    "chunking_mode": readiness["chunking_mode"],
                     "input_files_ready": readiness["input_files_ready"],
                     "pipeline_modules_ready": modules_ready,
                     "output_available": output_available,

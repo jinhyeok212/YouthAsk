@@ -1,0 +1,44 @@
+﻿metric,value
+document_count,2728
+duplicate_document_id_count,0
+blank_document_id_count,0
+blank_title_count,0
+blank_url_count,567
+blank_retrieval_text_count,0
+retrieval_text_min_length,123
+retrieval_text_avg_length,615.607
+retrieval_text_median_length,485.0
+retrieval_text_p95_length,1395
+retrieval_text_max_length,3717
+document_quality_min_score,-32
+document_quality_avg_score,83.549
+document_quality_median_score,83.0
+document_quality_max_score,106
+documents_with_application_url_count,910
+documents_with_any_url_count,2161
+primary_category.일자리,1076
+primary_category.복지문화,658
+primary_category.참여권리,388
+primary_category.교육,323
+primary_category.주거,282
+primary_category.UNKNOWN,1
+primary_mclsf.취업,699
+primary_mclsf.창업,326
+primary_mclsf.취약계층 및 금융지원,294
+primary_mclsf.청년참여,243
+primary_mclsf.미래역량강화,220
+primary_mclsf.문화활동,198
+primary_mclsf.주택 및 거주지,138
+primary_mclsf.전월세 및 주거급여 지원,135
+primary_mclsf.건강,98
+primary_mclsf.정책인프라구축,79
+primary_mclsf.교육비지원,72
+primary_mclsf.예술인지원,68
+primary_mclsf.재직자,51
+primary_mclsf.청년국제교류,46
+primary_mclsf.온라인교육,31
+primary_mclsf.권익보호,20
+primary_mclsf.기숙사,9
+primary_mclsf.UNKNOWN,1
+normalization_status.OK,2727
+normalization_status.CHECK,1
