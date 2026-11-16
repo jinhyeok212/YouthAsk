@@ -89,6 +89,7 @@ def write_experiment_artifacts(config: dict, run_context: dict) -> dict:
                 "version": config["evaluation"]["version"],
                 "ks": config["evaluation"].get("ks", [1, 3, 5]),
                 "validation": evaluation_info,
+                "context_metrics": evaluation.get("context_metrics"),
             },
             "git_commit": _git_commit(),
             "created_at_utc": utc_now_iso(),

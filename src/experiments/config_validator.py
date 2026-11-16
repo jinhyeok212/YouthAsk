@@ -177,6 +177,22 @@ def validate_semantics(
                 "클 수 없습니다."
             )
 
+    from src.evaluation.validate_inputs import validate_context_config
+
+    try:
+        validate_context_config(config)
+    except ValueError as error:
+        raise ConfigValidationError(str(error)) from error
+    context = config.get("evaluation", {}).get("context_metrics", {})
+    for key in ("required_facts_path", "chunk_fact_map_path"):
+        value = context.get(key)
+        if value:
+            expanded = expand_chunking_path(value, version)
+            if "{" in expanded or "}" in expanded:
+                raise ConfigValidationError(f"Unsupported placeholder in context_metrics.{key}")
+            if not Path(expanded).is_absolute():
+                resolve_project_path(expanded, project_root=project_root)
+
     experiment_id = config.get("experiment_id")
     base_experiment_id = config.get("base_experiment_id")
     if experiment_id and base_experiment_id == experiment_id:
@@ -220,6 +236,10 @@ def validate_input_files(
         ),
     }
 
+    context = config.get("evaluation", {}).get("context_metrics", {})
+    if context.get("enabled"):
+        for key in ("required_facts_path", "chunk_fact_map_path"):
+            required_paths[f"evaluation.context_metrics.{key}"] = context[key]
     missing: list[str] = []
     for field_name, configured_path in required_paths.items():
         if not configured_path:
@@ -290,6 +310,10 @@ def _resolve_runtime_paths(config: dict) -> dict:
             _resolve_project_path(expand_chunking_path(section[key], chunking_version))
         )
 
+    context = resolved.get("evaluation", {}).get("context_metrics", {})
+    for key in ("required_facts_path", "chunk_fact_map_path"):
+        if context.get(key):
+            context[key] = str(_resolve_project_path(expand_chunking_path(context[key], chunking_version)))
     return resolved
 
 
@@ -347,6 +371,10 @@ def inspect_input_readiness(config: dict) -> dict:
         "document_qrels": config["evaluation"]["document_qrels_path"],
         "chunk_qrels": config["evaluation"]["chunk_qrels_path"],
     }
+    context = config.get("evaluation", {}).get("context_metrics", {})
+    if context.get("enabled"):
+        for key in ("required_facts_path", "chunk_fact_map_path"):
+            paths[key] = context[key]
     exists = {name: Path(path).is_file() for name, path in paths.items()}
 
     # generate 모드는 chunks/chunk qrels를 실행 중 만들 수 있으므로 필수 입력이 아니다.
