@@ -1,0 +1,39 @@
+{
+  "status": "READY_FOR_INDEX_STAGE",
+  "dataset_info": {
+    "document_path": "data/processed/ontong_youth_full_v1/documents.jsonl",
+    "manifest_path": "data/evaluation/eval_200_v1/dataset_manifest.json",
+    "quality_report_path": "data/processed/ontong_youth_full_v1/data_quality_report.csv",
+    "document_count": 2728,
+    "sha256": "99ac3eba5a1f79ad62842a5aff973cb69dd236d8dac63974ef87c70f8240e044",
+    "dataset_version": "ontong_youth_full_v1",
+    "preprocessing_version": "prep_v1"
+  },
+  "chunk_info": {
+    "chunk_path": "D:\\project\\team-project\\YouthAsk\\data\\processed\\ontong_youth_full_v1\\chunks\\eval_200_v1\\section_heading_800_ov120_v1\\chunks.jsonl",
+    "manifest_path": "D:\\project\\team-project\\YouthAsk\\data\\processed\\ontong_youth_full_v1\\chunks\\eval_200_v1\\section_heading_800_ov120_v1\\chunk_manifest.json",
+    "chunk_count": 25829,
+    "chunk_qrels_path": "D:\\project\\team-project\\YouthAsk\\data\\evaluation\\eval_200_v1\\chunk_qrels\\section_heading_800_ov120_v1\\qrels_chunk.jsonl",
+    "chunk_qrels_status": "ready",
+    "chunk_qrels_review_status": "reviewed",
+    "chunk_qrels_candidates_path": "D:\\project\\team-project\\YouthAsk\\data\\evaluation\\eval_200_v1\\chunk_qrels\\section_heading_800_ov120_v1\\qrels_chunk.candidates.jsonl",
+    "chunk_qrels_review_required_path": "D:\\project\\team-project\\YouthAsk\\data\\evaluation\\eval_200_v1\\chunk_qrels\\section_heading_800_ov120_v1\\qrels_chunk_review_required.jsonl",
+    "chunk_qrels_meta_path": "D:\\project\\team-project\\YouthAsk\\data\\evaluation\\eval_200_v1\\chunk_qrels\\section_heading_800_ov120_v1\\qrels_chunk.meta.json",
+    "chunk_qrels_mapped_row_count": 211,
+    "chunk_qrels_review_required_count": 0,
+    "chunk_sha256": "f63102c3774ceb8130949bfd2f7ad27a46e6fd792de532410e84007d298d689e",
+    "dataset_sha256": "99ac3eba5a1f79ad62842a5aff973cb69dd236d8dac63974ef87c70f8240e044",
+    "chunking_mode": "generate",
+    "chunks_reused": true
+  },
+  "evaluation_info": {
+    "question_count": 200,
+    "document_qrels_query_count": 200,
+    "chunk_qrels_query_count": 200,
+    "chunk_qrels_row_count": 211,
+    "status": "VALID"
+  },
+  "experiment_output_available": true,
+  "index_db_created": false,
+  "embedding_or_index_run": false
+}

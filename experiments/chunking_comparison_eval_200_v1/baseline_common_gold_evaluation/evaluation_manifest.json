@@ -1,0 +1,80 @@
+{
+  "source_search_run_id": "exp_full_kure_200_context_v1",
+  "evaluation_id": "baseline_common_fact_gold_v1",
+  "search_or_embedding_executed": false,
+  "source_retrieval_sha256": "550e79cc05ed6323be18dac7e8c1e19f39e184da61cd6962c06463b59215fe9e",
+  "original_gold_count": 211,
+  "common_gold_count": 213,
+  "reviewed_added_mappings": [
+    {
+      "query_id": "oy_eval200_new_0039",
+      "document_id": "ontong_youth_20250618005400111002",
+      "chunk_id": "ontong_youth_20250618005400111002__sec_03_application_method__chunk_000",
+      "relevance": 1,
+      "chunking_version": "section_heading_800_ov120_v1",
+      "context_version": "context_eval_200_v1",
+      "review_status": "approved",
+      "reviewed_by": "Codex (사용자 위임; 검수된 원문 사실의 전체 포함 및 조건 범위 검증)",
+      "evidence_text": "지원서",
+      "source_fact_ids": [
+        "fact_e57d648eff09a5de"
+      ],
+      "matched_section": "application_method"
+    },
+    {
+      "query_id": "oy_eval200_new_0054",
+      "document_id": "ontong_youth_20251124005400211941",
+      "chunk_id": "ontong_youth_20251124005400211941__sec_04_application_method__chunk_000",
+      "relevance": 1,
+      "chunking_version": "section_heading_800_ov120_v1",
+      "context_version": "context_eval_200_v1",
+      "review_status": "approved",
+      "reviewed_by": "Codex (사용자 위임; 검수된 원문 사실의 전체 포함 및 조건 범위 검증)",
+      "evidence_text": "사업계획서",
+      "source_fact_ids": [
+        "fact_795f656daabddb26",
+        "fact_5bdbd23780adf282"
+      ],
+      "matched_section": "application_method"
+    }
+  ],
+  "reason": "0039 application-method explicitly requires application/self-introduction forms; 0054 application-method explicitly requires project plan/business certificate/local-tax proof. These fully support submitted required facts.",
+  "fact_sha256": "394e9efd27c08bbeca47df2ea5c7d04665473b3c01344d43a21d09187206c014",
+  "context_inputs": {
+    "version": "context_eval_200_v1",
+    "k": 5,
+    "chunking_version": "section_heading_800_ov120_v1",
+    "recall_definition": "unique_required_fact_coverage",
+    "inputs": {
+      "questions_path": {
+        "path": "D:\\project\\team-project\\YouthAsk\\data\\evaluation\\eval_200_v1\\eval_questions.jsonl",
+        "sha256": "4715106dd98d9541df9adfcf492a1f5177796700809f1ebe68eb2eeb10660a4f"
+      },
+      "document_qrels_path": {
+        "path": "D:\\project\\team-project\\YouthAsk\\data\\evaluation\\eval_200_v1\\qrels.jsonl",
+        "sha256": "7bbbeb3cfbb0e322ec7253a5fb80d4b7ee1c3fcd5f56ee2a7db6da5fe018f117"
+      },
+      "chunk_qrels_path": {
+        "path": "D:\\project\\team-project\\YouthAsk\\experiments\\chunking_comparison_eval_200_v1\\baseline_common_gold_evaluation\\qrels_chunk.jsonl",
+        "sha256": "f5916dee683bbd3e7c6b5bffe26b9dce4a3ff85f51a8cfe4fd21f6d0208e1ddd"
+      },
+      "required_facts_path": {
+        "path": "D:\\project\\team-project\\YouthAsk\\data\\evaluation\\eval_200_v1\\context_eval_200_v1\\required_facts.jsonl",
+        "sha256": "394e9efd27c08bbeca47df2ea5c7d04665473b3c01344d43a21d09187206c014"
+      },
+      "chunk_fact_map_path": {
+        "path": "D:\\project\\team-project\\YouthAsk\\experiments\\chunking_comparison_eval_200_v1\\baseline_common_gold_evaluation\\chunk_fact_map.jsonl",
+        "sha256": "481da583a871eb12c781bfb8e054de02caa990df7ccf2548cf0a5ae7b2e2f111"
+      },
+      "document_path": {
+        "path": "D:\\project\\team-project\\YouthAsk\\data\\processed\\ontong_youth_full_v1\\documents.jsonl",
+        "sha256": "99ac3eba5a1f79ad62842a5aff973cb69dd236d8dac63974ef87c70f8240e044"
+      },
+      "chunk_path": {
+        "path": "D:\\project\\team-project\\YouthAsk\\data\\processed\\ontong_youth_full_v1\\chunks\\eval_200_v1\\section_heading_800_ov120_v1\\chunks.jsonl",
+        "sha256": "f63102c3774ceb8130949bfd2f7ad27a46e6fd792de532410e84007d298d689e"
+      }
+    }
+  },
+  "status": "SEPARATE_COMMON_RULE_REEVALUATION"
+}

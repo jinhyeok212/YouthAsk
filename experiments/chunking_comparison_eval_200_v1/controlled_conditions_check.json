@@ -1,0 +1,73 @@
+{
+  "status": "PASS",
+  "checked_conditions": [
+    {
+      "plan_id": "C01",
+      "requested": {
+        "strategy": "fixed",
+        "size": 800,
+        "overlap": 120
+      },
+      "changed_fields": [
+        "experiment_id",
+        "index.version",
+        "index.collection_name",
+        "index.db_path",
+        "evaluation.chunk_qrels_path",
+        "evaluation.context_metrics.chunk_fact_map_path",
+        "chunking.version",
+        "chunking.strategy",
+        "base_experiment_id",
+        "experiment_name"
+      ],
+      "all_fixed_inputs_unchanged": true,
+      "complete_fact_mapping_rule": true
+    },
+    {
+      "plan_id": "C02",
+      "requested": {
+        "strategy": "section",
+        "size": 500,
+        "overlap": 120
+      },
+      "changed_fields": [
+        "base_experiment_id",
+        "experiment_id",
+        "chunking.size",
+        "chunking.version",
+        "index.collection_name",
+        "index.version",
+        "index.db_path",
+        "experiment_name",
+        "evaluation.context_metrics.chunk_fact_map_path",
+        "evaluation.chunk_qrels_path"
+      ],
+      "all_fixed_inputs_unchanged": true,
+      "complete_fact_mapping_rule": true
+    },
+    {
+      "plan_id": "C03",
+      "requested": {
+        "strategy": "section",
+        "size": 800,
+        "overlap": 0
+      },
+      "changed_fields": [
+        "experiment_id",
+        "experiment_name",
+        "base_experiment_id",
+        "chunking.version",
+        "chunking.overlap",
+        "index.version",
+        "index.db_path",
+        "index.collection_name",
+        "evaluation.chunk_qrels_path",
+        "evaluation.context_metrics.chunk_fact_map_path"
+      ],
+      "all_fixed_inputs_unchanged": true,
+      "complete_fact_mapping_rule": true
+    }
+  ],
+  "preserved_original_files": 28,
+  "tests": "174 passed in 5.63s"
+}

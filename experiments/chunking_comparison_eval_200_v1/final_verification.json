@@ -1,0 +1,74 @@
+{
+  "status": "PASS",
+  "original_files_preserved": 28,
+  "runs": [
+    {
+      "run_id": "exp_full_kure_200_fixed_800_ov120_v1",
+      "status": "PASS",
+      "questions": 200,
+      "document_gold_pairs": 207,
+      "index_count": 3462,
+      "schema_dataset_qrels_context_validation": "PASS",
+      "errors": 0,
+      "precision_questions": 200,
+      "recall_questions": 197
+    },
+    {
+      "run_id": "exp_full_kure_200_section_500_ov120_v1",
+      "status": "PASS",
+      "questions": 200,
+      "document_gold_pairs": 207,
+      "index_count": 26059,
+      "schema_dataset_qrels_context_validation": "PASS",
+      "errors": 0,
+      "precision_questions": 200,
+      "recall_questions": 197
+    },
+    {
+      "run_id": "exp_full_kure_200_section_800_ov0_v1",
+      "status": "PASS",
+      "questions": 200,
+      "document_gold_pairs": 207,
+      "index_count": 25825,
+      "schema_dataset_qrels_context_validation": "PASS",
+      "errors": 0,
+      "precision_questions": 200,
+      "recall_questions": 197
+    },
+    {
+      "run_id": "exp_full_kure_200_fixed_800_ov120_v2",
+      "status": "PASS",
+      "questions": 200,
+      "document_gold_pairs": 207,
+      "index_count": 3462,
+      "schema_dataset_qrels_context_validation": "PASS",
+      "errors": 0,
+      "precision_questions": 200,
+      "recall_questions": 197
+    }
+  ],
+  "confirmation_config_changes": [
+    {
+      "field": "experiment_id",
+      "baseline": "exp_full_kure_200_fixed_800_ov120_v1",
+      "candidate": "exp_full_kure_200_fixed_800_ov120_v2"
+    },
+    {
+      "field": "experiment_name",
+      "baseline": "exp-full-kure-200-fixed-800-ov120-v1",
+      "candidate": "exp-full-kure-200-fixed-800-ov120-v2"
+    },
+    {
+      "field": "base_experiment_id",
+      "baseline": "exp_full_kure_200_context_v1",
+      "candidate": "exp_full_kure_200_fixed_800_ov120_v1"
+    }
+  ],
+  "confirmation_top5_identical_all_200": true,
+  "same_3_recall_pending_queries": [
+    "oy_eval200_new_0021",
+    "oy_eval200_new_0025",
+    "oy_eval200_new_0120"
+  ],
+  "tests": "175 passed in 5.90s"
+}

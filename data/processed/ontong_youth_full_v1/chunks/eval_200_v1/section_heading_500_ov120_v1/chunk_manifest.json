@@ -1,0 +1,47 @@
+{
+  "signature": {
+    "dataset_version": "ontong_youth_full_v1",
+    "preprocessing_version": "prep_v1",
+    "dataset_sha256": "99ac3eba5a1f79ad62842a5aff973cb69dd236d8dac63974ef87c70f8240e044",
+    "chunking_version": "section_heading_500_ov120_v1",
+    "strategy": "section",
+    "size": 500,
+    "overlap": 120,
+    "unit": "characters",
+    "target_field": "retrieval_text",
+    "mode": "generate",
+    "chunk_id_scheme": "section_heading_v2"
+  },
+  "document_path": "D:\\project\\team-project\\YouthAsk\\data\\processed\\ontong_youth_full_v1\\documents.jsonl",
+  "document_sha256": "99ac3eba5a1f79ad62842a5aff973cb69dd236d8dac63974ef87c70f8240e044",
+  "chunk_path": "D:\\project\\team-project\\YouthAsk\\data\\processed\\ontong_youth_full_v1\\chunks\\eval_200_v1\\section_heading_500_ov120_v1\\chunks.jsonl",
+  "chunk_count": 26059,
+  "chunk_sha256": "3c0474e63f03dec757f25310eb262c64535a68db7b33cb725f4ecec157a6e7e8",
+  "created_at_utc": "2026-11-17T10:33:29.467568+00:00",
+  "generator": {
+    "strategy": "section",
+    "chunk_id_scheme": "section_heading_v2",
+    "size_meaning": "section body split limit; final text may include title prefix",
+    "chunk_id_deterministic": true
+  },
+  "validation": {
+    "valid": true,
+    "document_count": 2728,
+    "chunk_count": 26059,
+    "duplicate_chunk_id_count": 0,
+    "blank_chunk_count": 0,
+    "missing_document_id_count": 0,
+    "missing_chunk_document_id_count": 0,
+    "invalid_order_count": 0,
+    "uncovered_document_count": 0
+  },
+  "dataset_info": {
+    "document_path": "data/processed/ontong_youth_full_v1/documents.jsonl",
+    "manifest_path": "data/evaluation/eval_200_v1/dataset_manifest.json",
+    "quality_report_path": "data/processed/ontong_youth_full_v1/data_quality_report.csv",
+    "document_count": 2728,
+    "sha256": "99ac3eba5a1f79ad62842a5aff973cb69dd236d8dac63974ef87c70f8240e044",
+    "dataset_version": "ontong_youth_full_v1",
+    "preprocessing_version": "prep_v1"
+  }
+}

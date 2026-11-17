@@ -1,0 +1,27 @@
+{
+  "status": "PASS",
+  "baseline_preserved_files": 38,
+  "retrieval_query_count": 200,
+  "all_top5_chunk_document_ranks_identical_to_baseline": true,
+  "independent_context_precision": 0.762,
+  "precision_query_count": 200,
+  "independent_context_recall": 0.883248730964467,
+  "recall_query_count": 197,
+  "unevaluated_recall_queries": [
+    "oy_eval200_new_0021",
+    "oy_eval200_new_0025",
+    "oy_eval200_new_0120"
+  ],
+  "max_retrieval_latency_ms": 149.96049999899697,
+  "tests": "170 passed in 5.74s",
+  "model_revision": "8b418a58414668e75532ed045c22d9ca018ae2b2",
+  "observed_device": "cuda",
+  "observed_max_seq_length": 8192,
+  "model_loading_mode": "existing cached revision; HF_HUB_OFFLINE=1, TRANSFORMERS_OFFLINE=1",
+  "code_hashes": {
+    "src/evaluation/validate_inputs.py": "2120395b4a3e5a78d62d8f799cccaa48bcd8ddf31a929a1bbe351e5fca01a4a2",
+    "src/evaluation/evaluator.py": "d5b800eb920723194beccea2cb3bf088486439b66fd91e997fc9f959e16fe52c",
+    "src/evaluation/retrieval_metrics.py": "78beab6215764e217f153c8cf952a93f3f8c6622b11501fe75d18cdd5681a6a9",
+    "scripts/prepare_context_eval_200_v1.py": "32d1097a3bcc0091631a136ea5e15c9cc51fde9f20cd3ac47ab49b8f45dbf782"
+  }
+}

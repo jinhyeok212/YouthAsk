@@ -1,0 +1,50 @@
+{
+  "status": "PASS",
+  "question_count": 200,
+  "gold_pair_count": 207,
+  "approved_chunk_mapping_count": 211,
+  "review_csv_sha256": "c9dbeca3e0a504e3a234ae6a5396cef87d6cd866ad06481eaa1645b8174874ba",
+  "qrels_sha256": "1c90b9bdb74791ed1b366b5f87efe8b366aa29f0c6f6e7322e176e4c0eaf7522",
+  "review_manifest_sha256": "a598d8c2365a6844487b1dc458dc9039d8c42179a85c5a39d36bbb0c18c7cd5a",
+  "inputs": {
+    "questions": {
+      "path": "D:\\project\\team-project\\YouthAsk\\data\\evaluation\\eval_200_v1\\eval_questions.jsonl",
+      "sha256": "4715106dd98d9541df9adfcf492a1f5177796700809f1ebe68eb2eeb10660a4f"
+    },
+    "document_qrels": {
+      "path": "D:\\project\\team-project\\YouthAsk\\data\\evaluation\\eval_200_v1\\qrels.jsonl",
+      "sha256": "7bbbeb3cfbb0e322ec7253a5fb80d4b7ee1c3fcd5f56ee2a7db6da5fe018f117"
+    },
+    "documents": {
+      "path": "D:\\project\\team-project\\YouthAsk\\data\\processed\\ontong_youth_full_v1\\documents.jsonl",
+      "sha256": "99ac3eba5a1f79ad62842a5aff973cb69dd236d8dac63974ef87c70f8240e044"
+    },
+    "chunks": {
+      "path": "D:\\project\\team-project\\YouthAsk\\data\\processed\\ontong_youth_full_v1\\chunks\\eval_200_v1\\section_heading_800_ov120_v1\\chunks.jsonl",
+      "sha256": "f63102c3774ceb8130949bfd2f7ad27a46e6fd792de532410e84007d298d689e"
+    },
+    "chunk_manifest": {
+      "path": "D:\\project\\team-project\\YouthAsk\\data\\processed\\ontong_youth_full_v1\\chunks\\eval_200_v1\\section_heading_800_ov120_v1\\chunk_manifest.json",
+      "sha256": "79285ccffd53b6eba2a34eebe1a910f21a0f65830f0348ac4460d22e148b0592"
+    },
+    "runner_candidates": {
+      "path": "D:\\project\\team-project\\YouthAsk\\data\\evaluation\\eval_200_v1\\chunk_qrels\\section_heading_800_ov120_v1\\qrels_chunk.candidates.jsonl",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "runner_review_required": {
+      "path": "D:\\project\\team-project\\YouthAsk\\data\\evaluation\\eval_200_v1\\chunk_qrels\\section_heading_800_ov120_v1\\qrels_chunk_review_required.jsonl",
+      "sha256": "c9f6c24433c5c2285468048037d5d3f399d4be82cf80aaad7b4426cb6a16407c"
+    },
+    "evaluation_manifest": {
+      "path": "D:\\project\\team-project\\YouthAsk\\data\\evaluation\\eval_200_v1\\evaluation_manifest.json",
+      "sha256": "83fe5dd7c863d2827f5bf87158dd9ad48f5a27216f1a466718c44a5cab324093"
+    },
+    "source_csv": {
+      "path": "C:\\Users\\LeeJH\\Downloads\\YouthAsk_eval_200_source_verified_FINAL.csv",
+      "sha256": "21be26fedce3d06e26f73ae82f2ec890cb0fe03ea800e834191c9c3de7f4dd1a"
+    }
+  },
+  "approval_mode": "user_delegated_agent_review",
+  "reviewer": "Codex (사용자 명시적 위임 검수)",
+  "not_human_manual_review": true
+}

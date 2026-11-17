@@ -1,0 +1,57 @@
+{
+  "chunking_version": "section_heading_800_ov120_v1",
+  "config_path": "D:\\project\\team-project\\YouthAsk\\configs\\experiments\\exp_full_kure_200_v1.yaml",
+  "inputs": {
+    "questions": {
+      "path": "D:\\project\\team-project\\YouthAsk\\data\\evaluation\\eval_200_v1\\eval_questions.jsonl",
+      "sha256": "4715106dd98d9541df9adfcf492a1f5177796700809f1ebe68eb2eeb10660a4f"
+    },
+    "document_qrels": {
+      "path": "D:\\project\\team-project\\YouthAsk\\data\\evaluation\\eval_200_v1\\qrels.jsonl",
+      "sha256": "7bbbeb3cfbb0e322ec7253a5fb80d4b7ee1c3fcd5f56ee2a7db6da5fe018f117"
+    },
+    "documents": {
+      "path": "D:\\project\\team-project\\YouthAsk\\data\\processed\\ontong_youth_full_v1\\documents.jsonl",
+      "sha256": "99ac3eba5a1f79ad62842a5aff973cb69dd236d8dac63974ef87c70f8240e044"
+    },
+    "chunks": {
+      "path": "D:\\project\\team-project\\YouthAsk\\data\\processed\\ontong_youth_full_v1\\chunks\\eval_200_v1\\section_heading_800_ov120_v1\\chunks.jsonl",
+      "sha256": "f63102c3774ceb8130949bfd2f7ad27a46e6fd792de532410e84007d298d689e"
+    },
+    "chunk_manifest": {
+      "path": "D:\\project\\team-project\\YouthAsk\\data\\processed\\ontong_youth_full_v1\\chunks\\eval_200_v1\\section_heading_800_ov120_v1\\chunk_manifest.json",
+      "sha256": "79285ccffd53b6eba2a34eebe1a910f21a0f65830f0348ac4460d22e148b0592"
+    },
+    "runner_candidates": {
+      "path": "D:\\project\\team-project\\YouthAsk\\data\\evaluation\\eval_200_v1\\chunk_qrels\\section_heading_800_ov120_v1\\qrels_chunk.candidates.jsonl",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "runner_review_required": {
+      "path": "D:\\project\\team-project\\YouthAsk\\data\\evaluation\\eval_200_v1\\chunk_qrels\\section_heading_800_ov120_v1\\qrels_chunk_review_required.jsonl",
+      "sha256": "c9f6c24433c5c2285468048037d5d3f399d4be82cf80aaad7b4426cb6a16407c"
+    },
+    "evaluation_manifest": {
+      "path": "D:\\project\\team-project\\YouthAsk\\data\\evaluation\\eval_200_v1\\evaluation_manifest.json",
+      "sha256": "83fe5dd7c863d2827f5bf87158dd9ad48f5a27216f1a466718c44a5cab324093"
+    },
+    "source_csv": {
+      "path": "C:\\Users\\LeeJH\\Downloads\\YouthAsk_eval_200_source_verified_FINAL.csv",
+      "sha256": "21be26fedce3d06e26f73ae82f2ec890cb0fe03ea800e834191c9c3de7f4dd1a"
+    }
+  },
+  "editable_columns": [
+    "human_decision",
+    "human_evidence_quote",
+    "human_note",
+    "reviewer"
+  ],
+  "artifacts": {
+    "candidates.snapshot.jsonl": "cb2c2149f0fb629cef5674045ea4a9fc0841464b63dc1491f632f45304a3ece9",
+    "chunk_qrels_review.csv": "2277fadb9a7fb37c5bc8ebc885448a21a5bae7f779f9508783926b2c201ac90c",
+    "query_candidate_summary.csv": "f5b19c63573639a1124ec36634b6aa5004bd98254ba2608e4a588a536f31ab69",
+    "review_needed_details.json": "6c5ee179e22b6e6d3f01d6969eedf169ce6bf38c61fca2ff7616441caa1e3c82",
+    "review_needed_report.md": "b0ec17a3ff8557fa7958a0733a79feb4ca89991277159554abdb5f07653825bd",
+    "validation_report.json": "3d0093cbc4dadfa56730cc31e86472df7052eacec1794c5cad9e2a809dffb7bb"
+  },
+  "final_qrels_path": "D:\\project\\team-project\\YouthAsk\\data\\evaluation\\eval_200_v1\\chunk_qrels\\section_heading_800_ov120_v1\\qrels_chunk.jsonl"
+}

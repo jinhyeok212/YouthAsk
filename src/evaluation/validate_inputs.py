@@ -39,6 +39,7 @@ def load_context_inputs(config: dict, *, questions=None, documents=None, chunks=
         raise ValueError("Context evaluation requires non-empty unique question IDs")
     question_set = set(question_ids)
     document_ids = {r["document_id"] for r in documents}
+    document_by_id = {r["document_id"]: r for r in documents}
     document_qrels = load_document_qrels(evaluation["document_qrels_path"])
     chunk_by_id = {r["chunk_id"]: r for r in chunks}
     if len(chunk_by_id) != len(chunks):
@@ -70,6 +71,27 @@ def load_context_inputs(config: dict, *, questions=None, documents=None, chunks=
             raise ValueError(f"Unknown fact document: {qid}/{fid}")
         if row["document_id"] not in document_qrels.get(qid, set()):
             raise ValueError(f"Fact document is not gold for this question: {qid}/{fid}")
+        # A unique fact may have literal evidence in several Gold documents.
+        # Keep one fact_id (one Recall denominator term), with checked sources.
+        if "source_evidence" in row:
+            evidence = row["source_evidence"]
+            if not isinstance(evidence, list) or not evidence:
+                raise ValueError(f"Empty fact source evidence: {qid}/{fid}")
+            evidence_documents = set()
+            for item in evidence:
+                did = item.get("document_id")
+                if did not in document_ids or did not in document_qrels.get(qid, set()):
+                    raise ValueError(f"Fact evidence document is not Gold: {qid}/{fid}")
+                field = item.get("source_field", "retrieval_text")
+                source = document_by_id[did].get(field)
+                quote, start, end = item.get("quote"), item.get("start_char"), item.get("end_char")
+                if (not isinstance(source, str) or not isinstance(quote, str) or not quote.strip()
+                        or type(start) is not int or type(end) is not int
+                        or not 0 <= start < end <= len(source) or source[start:end] != quote):
+                    raise ValueError(f"Fact evidence quote/offset mismatch: {qid}/{fid}")
+                evidence_documents.add(did)
+            if row["document_id"] not in evidence_documents:
+                raise ValueError(f"Canonical fact document lacks evidence: {qid}/{fid}")
         facts[qid][fid] = row
     seen_map = set()
     for row in read_jsonl(settings["chunk_fact_map_path"]):
@@ -85,8 +107,15 @@ def load_context_inputs(config: dict, *, questions=None, documents=None, chunks=
         if key in seen_map:
             raise ValueError(f"Duplicate fact mapping: {key}")
         seen_map.add(key)
-        if cid is not None and chunk_by_id[cid]["document_id"] != facts[qid][fid]["document_id"]:
-            raise ValueError(f"Fact/chunk document mismatch: {qid}/{fid}/{cid}")
+        if cid is not None:
+            fact = facts[qid][fid]
+            did = chunk_by_id[cid]["document_id"]
+            evidence = fact.get("source_evidence")
+            allowed = {item["document_id"] for item in evidence} if evidence else {fact["document_id"]}
+            if did not in allowed:
+                raise ValueError(f"Fact/chunk document mismatch: {qid}/{fid}/{cid}")
+            if evidence and not any(item["document_id"] == did and item["quote"] in chunk_by_id[cid].get("text", "") for item in evidence):
+                raise ValueError(f"Fact evidence not contained in mapped chunk: {qid}/{fid}/{cid}")
         mapping[qid].append(row)
     for qid, rows in mapping.items():
         for fid in facts[qid]:

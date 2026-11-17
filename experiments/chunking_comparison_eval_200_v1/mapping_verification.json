@@ -1,0 +1,26 @@
+[
+  {
+    "run_id": "exp_full_kure_200_fixed_800_ov120_v1",
+    "fact_coverage": 691,
+    "map_rows": 755,
+    "chunk_gold_rows": 240,
+    "source_quotes_and_offsets": "PASS",
+    "duplicates_and_unknown_ids": 0
+  },
+  {
+    "run_id": "exp_full_kure_200_section_500_ov120_v1",
+    "fact_coverage": 691,
+    "map_rows": 723,
+    "chunk_gold_rows": 220,
+    "source_quotes_and_offsets": "PASS",
+    "duplicates_and_unknown_ids": 0
+  },
+  {
+    "run_id": "exp_full_kure_200_section_800_ov0_v1",
+    "fact_coverage": 691,
+    "map_rows": 716,
+    "chunk_gold_rows": 213,
+    "source_quotes_and_offsets": "PASS",
+    "duplicates_and_unknown_ids": 0
+  }
+]

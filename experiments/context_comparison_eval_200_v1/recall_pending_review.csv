@@ -1,0 +1,4 @@
+﻿query_id,fact_id,fact_text,document_id,source_location,review_reason
+oy_eval200_new_0021,fact_148d44ec4b6c7967,"모집인원 상반기 64명(상반기 32명, 하반기 32명)",ontong_youth_20250908005400211661,retrieval_text[187:217],원본 인원 표기가 상반기64명과 상반기32명/하반기32명으로 모순됨. 임의 정정 금지.
+oy_eval200_new_0025,fact_9f3140797dfb6f0e,기타 청년정책 및 청년활동에 관심있는 사,ontong_youth_20250502005400210781,retrieval_text[470:492],원본 raw_record와 retrieval_text가 '관심있는 사'에서 절단됨. 누락 문구를 추정하지 않음.
+oy_eval200_new_0120,fact_74a83952b186726e,인천시 소재 건축물 대,ontong_youth_20260406005400212462,retrieval_text[1590:1602],원본 자격 조건이 '인천시 소재 건축물 대'에서 절단됨. 건축물 조건을 완성하지 않음.

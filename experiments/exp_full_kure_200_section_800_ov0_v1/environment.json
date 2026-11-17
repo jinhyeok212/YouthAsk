@@ -1,0 +1,22 @@
+{
+  "python": "3.12.10 (tags/v3.12.10:0cc8128, Apr  8 2025, 12:21:36) [MSC v.1943 64 bit (AMD64)]",
+  "python_version": "3.12.10",
+  "platform": "Windows-10-10.0.19045-SP0",
+  "machine": "AMD64",
+  "packages": {
+    "PyYAML": "6.0.3",
+    "jsonschema": "4.26.0",
+    "numpy": "2.4.6",
+    "chromadb": "1.5.9",
+    "sentence-transformers": "6.1.0",
+    "torch": "2.11.0+cu128",
+    "transformers": "5.19.0",
+    "huggingface-hub": "1.33.0",
+    "tqdm": "4.70.1"
+  },
+  "torch_runtime": {
+    "cuda_available": true,
+    "cuda_device_name": "NVIDIA GeForce RTX 4060",
+    "mps_available": false
+  }
+}

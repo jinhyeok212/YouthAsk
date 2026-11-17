@@ -94,6 +94,8 @@ context_metrics:
 
 `required_facts.jsonl`은 모든 청킹·모델에서 동일 버전을 쓴다(한 행에 한 사실).
 
+`context_eval_200_v1`부터 선택적으로 `source_evidence` 배열을 지원한다. 같은 사실을 복수 Gold 문서가 지지하면 fact_id는 하나로 유지하고 배열에 문서별 `document_id`, `source_field`, `quote`, `start_char`, `end_char`를 기록한다. 검증기는 각 문서가 해당 질문의 Gold인지, 인용·위치가 실제 원문과 일치하는지, 연결 청크가 그 문서의 전체 인용을 포함하는지 확인한다. 기존 배열 없는 입력은 단일 document_id 계약을 유지한다. 이는 복수 Gold 때문에 Recall 분모가 중복되거나 다른 Gold의 정답 청크가 누락되는 것을 방지한다.
+
 ```json
 {"query_id":"q1","fact_id":"age","fact_text":"A 정책은 만 19세 이상 신청 가능하다.","document_id":"d1","source_location":"eligibility","review_status":"approved"}
 {"query_id":"q1","fact_id":"period","fact_text":"신청 마감일은 11월 30일이다.","document_id":"d1","source_location":"application_period","review_status":"approved"}

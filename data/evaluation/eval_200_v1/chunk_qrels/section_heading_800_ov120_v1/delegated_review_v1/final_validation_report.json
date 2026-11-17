@@ -1,0 +1,31 @@
+{
+  "status": "PASS",
+  "question_count": 200,
+  "gold_pair_count": 207,
+  "approved_chunk_mapping_count": 211,
+  "source_quote_and_offsets_verified_count": 211,
+  "unknown_chunk_ids": 0,
+  "chunk_document_mismatches": 0,
+  "version_mismatches": 0,
+  "duplicate_query_chunk_pairs": 0,
+  "missing_questions": 0,
+  "missing_gold_pairs": 0,
+  "protected_existing_files_unchanged": 18,
+  "tests": "161 passed in 5.20s",
+  "reference_numeric_check_exceptions": [
+    {
+      "query_id": "oy_eval200_new_0053",
+      "reference_numeric_tokens_absent": [
+        "1",
+        "12",
+        "2028"
+      ]
+    }
+  ],
+  "reference_mismatch_query_ids": [
+    "oy_eval200_new_0053"
+  ],
+  "final_qrels_sha256": "1c90b9bdb74791ed1b366b5f87efe8b366aa29f0c6f6e7322e176e4c0eaf7522",
+  "reviewer_type": "user_delegated_agent",
+  "index_embedding_executed": false
+}

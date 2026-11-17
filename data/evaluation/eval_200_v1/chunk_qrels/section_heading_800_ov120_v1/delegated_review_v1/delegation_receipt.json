@@ -1,0 +1,30 @@
+{
+  "status": "PASS",
+  "question_count": 200,
+  "gold_pair_count": 207,
+  "approved_chunk_mapping_count": 211,
+  "reviewer_type": "agent",
+  "reviewed_by": "Codex (사용자 명시적 위임 검수; 사람 직접 검수 아님)",
+  "authorization": "User explicitly asked Codex to perform the review and prepare the final Runner inputs in this conversation.",
+  "not_human_manual_review": true,
+  "methods": {
+    "DIRECT_ANSWER_REVIEW": 154,
+    "SOURCE_FACT_REVIEW": 55,
+    "QUESTION_REFERENCE_MISMATCH_OVERRIDE": 2
+  },
+  "final_qrels_sha256": "1c90b9bdb74791ed1b366b5f87efe8b366aa29f0c6f6e7322e176e4c0eaf7522",
+  "artifacts": {
+    "approved_evidence_audit.jsonl": "f306f242e5c9d333eb1c1f392fedf8b6bdf54841e76d0722da3bf7097ebe3011",
+    "delegated_review.csv": "c9dbeca3e0a504e3a234ae6a5396cef87d6cd866ad06481eaa1645b8174874ba",
+    "exception_decision_plan.json": "73e56a426a8d109e9176b64860469e9f53396572d5b0b8ab4c753ad1c2b0f86d",
+    "final_validation_report.json": "22abb1cc6421993e7cc6cea84feff40294e7fa99203a28bde7bc4add10634ac9",
+    "query_review_summary.csv": "482d3a1ff8ee5604eef71a0aba872a9f95b9b15f62b9a2be727dfc7ae2e8c4ca",
+    "quick_review.csv": "c75ff74c6ed0bd3641339e81a8ccda9e7ec11790c3892f3ed4891894e2c4d222",
+    "review_results.md": "6232c07eadc4c96937e71754cbe5fb176f92dae3deafb54abf57db1395fee7b8",
+    "runner_preflight_report.json": "2f65c30ea6d06cf59d2a1d70b0cebd9f67e9612f9d2753170d191e9592e96e5c"
+  },
+  "caveat": "Binary relevance identifies source-supported answer-bearing chunks. A chunk may support part of a multi-chunk/multi-Gold answer; complete reference support is checked at the combined evidence level. Query 0053 has an unchanged reference-answer mismatch documented in its audit.",
+  "runner_meta_sha256": "4fe99b621fbc3d18442d261d9959fe22d4cd3a5d6fa037b7fae0219475c19ba2",
+  "legacy_named_approval_receipt_sha256": "a4625c1e8d19116398e15321b5038788b98f75b4d1538823ee95306357be704a",
+  "explicit_decision_plan_sha256": "73e56a426a8d109e9176b64860469e9f53396572d5b0b8ab4c753ad1c2b0f86d"
+}

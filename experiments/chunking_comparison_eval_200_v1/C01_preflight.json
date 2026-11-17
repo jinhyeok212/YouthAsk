@@ -1,0 +1,82 @@
+{
+  "plan_id": "C01",
+  "experiment_id": "exp_full_kure_200_fixed_800_ov120_v1",
+  "requested": {
+    "strategy": "fixed",
+    "size": 800,
+    "overlap": 120
+  },
+  "configuration_differences": [
+    {
+      "field": "experiment_id",
+      "baseline": "exp_full_kure_200_context_v1",
+      "candidate": "exp_full_kure_200_fixed_800_ov120_v1"
+    },
+    {
+      "field": "index.version",
+      "baseline": "index_full_kure_200_v1",
+      "candidate": "index_full_kure_200_fixed_800_ov120_v1"
+    },
+    {
+      "field": "index.collection_name",
+      "baseline": "ontong_youth_full_kure_200_v1",
+      "candidate": "ontong_youth_full_kure_200_fixed_800_ov120_v1"
+    },
+    {
+      "field": "index.db_path",
+      "baseline": "indexes/chroma/index_full_kure_200_v1",
+      "candidate": "indexes/chroma/index_full_kure_200_fixed_800_ov120_v1"
+    },
+    {
+      "field": "evaluation.chunk_qrels_path",
+      "baseline": "data/evaluation/eval_200_v1/context_eval_200_v1/section_heading_800_ov120_v1/qrels_chunk.jsonl",
+      "candidate": "data/evaluation/eval_200_v1/context_eval_200_v1/fixed_800_ov120_v1/qrels_chunk.jsonl"
+    },
+    {
+      "field": "evaluation.context_metrics.chunk_fact_map_path",
+      "baseline": "data/evaluation/eval_200_v1/context_eval_200_v1/chunk_fact_map.jsonl",
+      "candidate": "data/evaluation/eval_200_v1/context_eval_200_v1/fixed_800_ov120_v1/chunk_fact_map.jsonl"
+    },
+    {
+      "field": "chunking.version",
+      "baseline": "section_heading_800_ov120_v1",
+      "candidate": "fixed_800_ov120_v1"
+    },
+    {
+      "field": "chunking.strategy",
+      "baseline": "section",
+      "candidate": "fixed"
+    },
+    {
+      "field": "base_experiment_id",
+      "baseline": "exp_full_kure_200_v1",
+      "candidate": "exp_full_kure_200_context_v1"
+    },
+    {
+      "field": "experiment_name",
+      "baseline": "full-dataset-kure-200-context-v1",
+      "candidate": "exp-full-kure-200-fixed-800-ov120-v1"
+    }
+  ],
+  "unexpected_configuration_changes": [],
+  "question_count": 200,
+  "document_gold_pair_count": 207,
+  "covered_gold_pairs": 207,
+  "gold_pairs_without_single_fact_chunk": [],
+  "chunk_count": 3462,
+  "chunk_qrels_count": 240,
+  "fact_count": 691,
+  "fact_map_count": 755,
+  "facts_without_single_complete_chunk": 0,
+  "fact_sha256": "394e9efd27c08bbeca47df2ea5c7d04665473b3c01344d43a21d09187206c014",
+  "chunk_qrels_sha256": "8970ddaad4e45ebfe2e051141ce509e2051500c97e47fb4f4606fe300ba1a61b",
+  "chunk_sha256": "d202b62d263ff80f4fa89a62127ce9276a153f7873ad5eab169a2a5f2ce35046",
+  "max_final_chunk_length": 800,
+  "mean_final_chunk_length": 510.5300404390526,
+  "multi_part_section_count": null,
+  "document_count": 2728,
+  "context_recall_ready_queries": 197,
+  "status": "READY_FOR_INDEX",
+  "gold_rule": "A complete approved required fact with source and role/conditional scope; Gold document alone is insufficient.",
+  "baseline_gold_rule_difference": "Baseline retains its prior 211 whole-answer-reviewed positives; 2 additional fact-bearing baseline chunks exist. Precision/chunk-Gold comparisons to baseline require this limitation; document metrics and fixed fact Recall remain controlled."
+}
