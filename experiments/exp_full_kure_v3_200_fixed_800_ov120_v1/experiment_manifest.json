@@ -1,0 +1,144 @@
+{
+  "experiment_id": "exp_full_kure_v3_200_fixed_800_ov120_v1",
+  "experiment_name": "full-kure-v3-200-fixed-800-ov120-v1",
+  "base_experiment_id": "exp_full_kure_200_fixed_800_ov120_v2",
+  "status": "SUCCESS",
+  "schema_version": "1.1",
+  "dataset": {
+    "document_path": "data/processed/ontong_youth_full_v1/documents.jsonl",
+    "manifest_path": "data/evaluation/eval_200_v1/dataset_manifest.json",
+    "quality_report_path": "data/processed/ontong_youth_full_v1/data_quality_report.csv",
+    "document_count": 2728,
+    "sha256": "99ac3eba5a1f79ad62842a5aff973cb69dd236d8dac63974ef87c70f8240e044",
+    "dataset_version": "ontong_youth_full_v1",
+    "preprocessing_version": "prep_v1"
+  },
+  "chunking": {
+    "chunk_path": "D:\\project\\team-project\\YouthAsk\\data\\processed\\ontong_youth_full_v1\\chunks\\eval_200_v1\\fixed_800_ov120_v1\\chunks.jsonl",
+    "manifest_path": "D:\\project\\team-project\\YouthAsk\\data\\processed\\ontong_youth_full_v1\\chunks\\eval_200_v1\\fixed_800_ov120_v1\\chunk_manifest.json",
+    "chunk_count": 3462,
+    "chunk_qrels_path": "D:\\project\\team-project\\YouthAsk\\data\\evaluation\\eval_200_v1\\context_eval_200_v1\\fixed_800_ov120_v1\\qrels_chunk.jsonl",
+    "chunk_qrels_status": "ready",
+    "chunk_qrels_review_status": "reviewed",
+    "chunk_qrels_candidates_path": "D:\\project\\team-project\\YouthAsk\\data\\evaluation\\eval_200_v1\\context_eval_200_v1\\fixed_800_ov120_v1\\qrels_chunk.candidates.jsonl",
+    "chunk_qrels_review_required_path": "D:\\project\\team-project\\YouthAsk\\data\\evaluation\\eval_200_v1\\context_eval_200_v1\\fixed_800_ov120_v1\\qrels_chunk_review_required.jsonl",
+    "chunk_qrels_meta_path": "D:\\project\\team-project\\YouthAsk\\data\\evaluation\\eval_200_v1\\context_eval_200_v1\\fixed_800_ov120_v1\\qrels_chunk.meta.json",
+    "chunk_qrels_mapped_row_count": 240,
+    "chunk_qrels_review_required_count": 0,
+    "chunk_sha256": "d202b62d263ff80f4fa89a62127ce9276a153f7873ad5eab169a2a5f2ce35046",
+    "dataset_sha256": "99ac3eba5a1f79ad62842a5aff973cb69dd236d8dac63974ef87c70f8240e044",
+    "chunking_mode": "generate",
+    "chunks_reused": true
+  },
+  "index": {
+    "index_version": "index_full_kure_v3_200_fixed_800_ov120_v1",
+    "db_path": "D:\\project\\team-project\\YouthAsk\\indexes\\chroma\\index_full_kure_v3_200_fixed_800_ov120_v1",
+    "collection_name": "ontong_youth_full_kure_v3_200_fixed_800_ov120_v1",
+    "reused": false,
+    "index_count": 3462,
+    "build_time_seconds": 2569.9942,
+    "manifest_path": "D:\\project\\team-project\\YouthAsk\\indexes\\chroma\\index_full_kure_v3_200_fixed_800_ov120_v1\\ontong_youth_full_kure_v3_200_fixed_800_ov120_v1__manifest.json"
+  },
+  "embedding": {
+    "model": "nlpai-lab/KURE-v3",
+    "revision": "5b0494e801cd5cc21234012df1b83cfdb42b2065",
+    "dimension": 2048,
+    "normalize": true,
+    "batch_size": 32,
+    "device": "auto",
+    "dtype": "float32"
+  },
+  "retrieval": {
+    "evaluation_max_k": 5,
+    "context_top_k": 3
+  },
+  "evaluation": {
+    "version": "eval_200_v1",
+    "ks": [
+      1,
+      3,
+      5
+    ],
+    "validation": {
+      "question_count": 200,
+      "document_qrels_query_count": 200,
+      "chunk_qrels_query_count": 200,
+      "chunk_qrels_row_count": 240,
+      "status": "VALID",
+      "context_metrics": {
+        "version": "context_eval_200_v1",
+        "k": 5,
+        "chunking_version": "fixed_800_ov120_v1",
+        "recall_definition": "unique_required_fact_coverage",
+        "inputs": {
+          "questions_path": {
+            "path": "D:\\project\\team-project\\YouthAsk\\data\\evaluation\\eval_200_v1\\eval_questions.jsonl",
+            "sha256": "4715106dd98d9541df9adfcf492a1f5177796700809f1ebe68eb2eeb10660a4f"
+          },
+          "document_qrels_path": {
+            "path": "D:\\project\\team-project\\YouthAsk\\data\\evaluation\\eval_200_v1\\qrels.jsonl",
+            "sha256": "7bbbeb3cfbb0e322ec7253a5fb80d4b7ee1c3fcd5f56ee2a7db6da5fe018f117"
+          },
+          "chunk_qrels_path": {
+            "path": "D:\\project\\team-project\\YouthAsk\\data\\evaluation\\eval_200_v1\\context_eval_200_v1\\fixed_800_ov120_v1\\qrels_chunk.jsonl",
+            "sha256": "8970ddaad4e45ebfe2e051141ce509e2051500c97e47fb4f4606fe300ba1a61b"
+          },
+          "required_facts_path": {
+            "path": "D:\\project\\team-project\\YouthAsk\\data\\evaluation\\eval_200_v1\\context_eval_200_v1\\required_facts.jsonl",
+            "sha256": "394e9efd27c08bbeca47df2ea5c7d04665473b3c01344d43a21d09187206c014"
+          },
+          "chunk_fact_map_path": {
+            "path": "D:\\project\\team-project\\YouthAsk\\data\\evaluation\\eval_200_v1\\context_eval_200_v1\\fixed_800_ov120_v1\\chunk_fact_map.jsonl",
+            "sha256": "07995817e3fadf3260a0cf5039b0958112579341a5e281201572e64ec0e3f2ea"
+          },
+          "document_path": {
+            "path": "D:\\project\\team-project\\YouthAsk\\data\\processed\\ontong_youth_full_v1\\documents.jsonl",
+            "sha256": "99ac3eba5a1f79ad62842a5aff973cb69dd236d8dac63974ef87c70f8240e044"
+          },
+          "chunk_path": {
+            "path": "D:\\project\\team-project\\YouthAsk\\data\\processed\\ontong_youth_full_v1\\chunks\\eval_200_v1\\fixed_800_ov120_v1\\chunks.jsonl",
+            "sha256": "d202b62d263ff80f4fa89a62127ce9276a153f7873ad5eab169a2a5f2ce35046"
+          }
+        }
+      }
+    },
+    "context_metrics": {
+      "version": "context_eval_200_v1",
+      "k": 5,
+      "chunking_version": "fixed_800_ov120_v1",
+      "recall_definition": "unique_required_fact_coverage",
+      "inputs": {
+        "questions_path": {
+          "path": "D:\\project\\team-project\\YouthAsk\\data\\evaluation\\eval_200_v1\\eval_questions.jsonl",
+          "sha256": "4715106dd98d9541df9adfcf492a1f5177796700809f1ebe68eb2eeb10660a4f"
+        },
+        "document_qrels_path": {
+          "path": "D:\\project\\team-project\\YouthAsk\\data\\evaluation\\eval_200_v1\\qrels.jsonl",
+          "sha256": "7bbbeb3cfbb0e322ec7253a5fb80d4b7ee1c3fcd5f56ee2a7db6da5fe018f117"
+        },
+        "chunk_qrels_path": {
+          "path": "D:\\project\\team-project\\YouthAsk\\data\\evaluation\\eval_200_v1\\context_eval_200_v1\\fixed_800_ov120_v1\\qrels_chunk.jsonl",
+          "sha256": "8970ddaad4e45ebfe2e051141ce509e2051500c97e47fb4f4606fe300ba1a61b"
+        },
+        "required_facts_path": {
+          "path": "D:\\project\\team-project\\YouthAsk\\data\\evaluation\\eval_200_v1\\context_eval_200_v1\\required_facts.jsonl",
+          "sha256": "394e9efd27c08bbeca47df2ea5c7d04665473b3c01344d43a21d09187206c014"
+        },
+        "chunk_fact_map_path": {
+          "path": "D:\\project\\team-project\\YouthAsk\\data\\evaluation\\eval_200_v1\\context_eval_200_v1\\fixed_800_ov120_v1\\chunk_fact_map.jsonl",
+          "sha256": "07995817e3fadf3260a0cf5039b0958112579341a5e281201572e64ec0e3f2ea"
+        },
+        "document_path": {
+          "path": "D:\\project\\team-project\\YouthAsk\\data\\processed\\ontong_youth_full_v1\\documents.jsonl",
+          "sha256": "99ac3eba5a1f79ad62842a5aff973cb69dd236d8dac63974ef87c70f8240e044"
+        },
+        "chunk_path": {
+          "path": "D:\\project\\team-project\\YouthAsk\\data\\processed\\ontong_youth_full_v1\\chunks\\eval_200_v1\\fixed_800_ov120_v1\\chunks.jsonl",
+          "sha256": "d202b62d263ff80f4fa89a62127ce9276a153f7873ad5eab169a2a5f2ce35046"
+        }
+      }
+    }
+  },
+  "git_commit": "ab139135bbfc135538772fd89637c79064232847",
+  "created_at_utc": "2026-11-28T12:27:02.658276+00:00"
+}

@@ -10,6 +10,7 @@ import numpy as np
 class KUREAdapter:
     def __init__(self, config: dict) -> None:
         from src.rag.embedding import KUREEmbedder, choose_device
+        from src.rag.embedding_profiles import get_profile_by_model
 
         embedding_cfg = config["embedding"]
         model_name = embedding_cfg["model"]
@@ -26,14 +27,37 @@ class KUREAdapter:
                 "embedding.normalize=true를 사용하세요."
             )
 
-        self.embedder = KUREEmbedder(
-            model_name=model_name,
-            device=device,
-            batch_size=batch_size,
-            revision=revision,
-        )
+        profile = get_profile_by_model(model_name)
+        self._profiled = profile is not None
+        if profile is not None:
+            from src.indexing.profiled_embedder import ProfiledEmbedder
 
-        actual_dim = self.embedder.embedding_dim
+            if revision != profile.revision:
+                raise ValueError(
+                    "Embedding revision이 고정 model profile과 다릅니다: "
+                    f"expected={profile.revision}, actual={revision}"
+                )
+            if self.expected_dimension != profile.dimension:
+                raise ValueError(
+                    "Embedding dimension이 고정 model profile과 다릅니다: "
+                    f"expected={profile.dimension}, actual={self.expected_dimension}"
+                )
+            self.embedder = ProfiledEmbedder(
+                profile=profile,
+                device=device,
+                batch_size=batch_size,
+                dtype=embedding_cfg.get("dtype", "float32"),
+            )
+            actual_dim = profile.dimension
+        else:
+            self.embedder = KUREEmbedder(
+                model_name=model_name,
+                device=device,
+                batch_size=batch_size,
+                revision=revision,
+            )
+            actual_dim = self.embedder.embedding_dim
+
         if actual_dim is not None and actual_dim != self.expected_dimension:
             raise ValueError(
                 "Embedding dimension 불일치: "
@@ -45,9 +69,13 @@ class KUREAdapter:
         return self.expected_dimension
 
     def encode_documents(self, texts: List[str]) -> np.ndarray:
+        if self._profiled:
+            return self.embedder.encode_documents(texts)
         return self.embedder.embed_documents(texts=texts, show_progress_bar=False)
 
     def encode_queries(self, queries: List[str]) -> np.ndarray:
         if not queries:
             return np.empty((0, self.expected_dimension), dtype=np.float32)
+        if self._profiled:
+            return self.embedder.encode_queries(queries)
         return np.vstack([self.embedder.embed_query(q) for q in queries]).astype(np.float32)

@@ -54,6 +54,15 @@ def test_embedding_revision_change_requires_new_index():
     assert manifest_matches(manifest, cfg2, _chunk_info()) is False
 
 
+def test_embedding_dtype_change_requires_new_index():
+    cfg1 = _config()
+    cfg2 = _config()
+    cfg1["embedding"]["dtype"] = "float32"
+    cfg2["embedding"]["dtype"] = "bfloat16"
+    manifest = {"signature": build_index_signature(cfg1, _chunk_info())}
+    assert manifest_matches(manifest, cfg2, _chunk_info()) is False
+
+
 def test_index_version_change_requires_new_index():
     cfg1 = _config()
     cfg2 = _config()

@@ -62,6 +62,22 @@ def sha256_file(path: Path) -> str:
     return digest.hexdigest()
 
 
+def sha256_text_variants(path: Path) -> set[str]:
+    """Return raw/LF/CRLF hashes for Git-tracked text data.
+
+    Git may check out JSONL with LF on macOS and CRLF on Windows.  Only line-ending
+    normalization is accepted; every other byte change still fails validation.
+    """
+    raw = path.read_bytes()
+    lf = raw.replace(b"\r\n", b"\n")
+    crlf = lf.replace(b"\n", b"\r\n")
+    return {
+        hashlib.sha256(raw).hexdigest(),
+        hashlib.sha256(lf).hexdigest(),
+        hashlib.sha256(crlf).hexdigest(),
+    }
+
+
 def project_root() -> Path:
     return Path(__file__).resolve().parents[2]
 
@@ -304,7 +320,7 @@ def validate_dataset_files(config: dict[str, Any]) -> dict[str, Any]:
         or manifest.get("documents_sha256")
         or ""
     )
-    if manifest_sha and manifest_sha != sha256:
+    if manifest_sha and manifest_sha not in sha256_text_variants(document_path):
         raise ValueError("Manifest documents_jsonl SHA256 does not match current documents.jsonl")
 
     return {
@@ -312,7 +328,8 @@ def validate_dataset_files(config: dict[str, Any]) -> dict[str, Any]:
         "manifest_path": str(manifest_path.relative_to(root).as_posix()),
         "quality_report_path": str(quality_report_path.relative_to(root).as_posix()),
         "document_count": len(documents),
-        "sha256": sha256,
+        # Use the manifest hash as the canonical cross-platform dataset identity.
+        "sha256": manifest_sha or sha256,
         "dataset_version": manifest.get("dataset_version", ""),
         "preprocessing_version": manifest.get("preprocessing_version", ""),
     }

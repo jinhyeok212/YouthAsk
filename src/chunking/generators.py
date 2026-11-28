@@ -81,7 +81,7 @@ def short_hash(text: str) -> str:
 
 
 def scalar(value: Any) -> str | int | float | bool:
-    if isinstance(value, bool | int | float | str):
+    if isinstance(value, (bool, int, float, str)):
         return value
     if value is None:
         return ""

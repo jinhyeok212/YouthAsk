@@ -163,12 +163,19 @@ def validate_evaluation_inputs(
     등장하는 것이 정상이다.
     """
     questions = read_jsonl(config["evaluation"]["questions_path"])
+    if not questions:
+        raise ValueError("평가 질문이 0건입니다.")
+
+    expected_count = config["evaluation"].get("expected_question_count")
+    if expected_count is not None and len(questions) != int(expected_count):
+        raise ValueError(
+            "평가 질문 수가 실험 설정과 다릅니다: "
+            f"expected={expected_count}, actual={len(questions)}"
+        )
+
     documents = read_jsonl(dataset_info["document_path"])
     chunks = read_jsonl(chunk_info["chunk_path"])
     raw_chunk_qrels = read_jsonl(config["evaluation"]["chunk_qrels_path"])
-
-    if not questions:
-        raise ValueError("평가 질문이 0건입니다.")
 
     # 1) 질문 자체 검증
     question_ids: list[str] = []

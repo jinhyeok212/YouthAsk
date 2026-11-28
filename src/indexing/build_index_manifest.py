@@ -21,6 +21,10 @@ INDEX_AFFECTING_KEYS = (
     "embedding_revision",
     "embedding_dimension",
     "embedding_normalize",
+    "embedding_device",
+    "embedding_dtype",
+    "embedding_batch_size",
+    "db_batch_size",
     "distance_metric",
 )
 
@@ -46,6 +50,10 @@ def build_index_signature(config: dict, chunk_info: dict) -> Dict[str, Any]:
         "embedding_revision": embedding.get("revision"),
         "embedding_dimension": int(embedding["dimension"]),
         "embedding_normalize": bool(embedding["normalize"]),
+        "embedding_device": embedding.get("device", "auto"),
+        "embedding_dtype": embedding.get("dtype", "float32"),
+        "embedding_batch_size": int(embedding.get("batch_size", 32)),
+        "db_batch_size": int(index.get("db_batch_size", 256)),
         "distance_metric": index["distance_metric"],
     }
 

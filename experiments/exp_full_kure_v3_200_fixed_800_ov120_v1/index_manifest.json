@@ -1,0 +1,30 @@
+{
+  "manifest_schema_version": "2.0",
+  "index_version": "index_full_kure_v3_200_fixed_800_ov120_v1",
+  "db_path": "D:\\project\\team-project\\YouthAsk\\indexes\\chroma\\index_full_kure_v3_200_fixed_800_ov120_v1",
+  "collection_name": "ontong_youth_full_kure_v3_200_fixed_800_ov120_v1",
+  "signature": {
+    "index_version": "index_full_kure_v3_200_fixed_800_ov120_v1",
+    "dataset_version": "ontong_youth_full_v1",
+    "preprocessing_version": "prep_v1",
+    "dataset_sha256": "99ac3eba5a1f79ad62842a5aff973cb69dd236d8dac63974ef87c70f8240e044",
+    "chunking_version": "fixed_800_ov120_v1",
+    "chunk_size": 800,
+    "chunk_overlap": 120,
+    "chunk_target_field": "retrieval_text",
+    "chunk_sha256": "d202b62d263ff80f4fa89a62127ce9276a153f7873ad5eab169a2a5f2ce35046",
+    "chunk_count": 3462,
+    "embedding_model": "nlpai-lab/KURE-v3",
+    "embedding_revision": "5b0494e801cd5cc21234012df1b83cfdb42b2065",
+    "embedding_dimension": 2048,
+    "embedding_normalize": true,
+    "embedding_device": "auto",
+    "embedding_dtype": "float32",
+    "embedding_batch_size": 32,
+    "db_batch_size": 256,
+    "distance_metric": "cosine"
+  },
+  "index_count": 3462,
+  "build_time_seconds": 2569.9942,
+  "reused": false
+}

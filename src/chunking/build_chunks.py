@@ -163,7 +163,7 @@ def _generate_or_reuse_generated_chunks(
     try:
         reused = manifest_path.exists()
         if reused:
-            check_manifest(manifest_path, chunk_path, signature)
+            existing_manifest = check_manifest(manifest_path, chunk_path, signature)
             chunk_file = chunk_path
             chunks = read_jsonl(chunk_path)
         else:
@@ -192,7 +192,11 @@ def _generate_or_reuse_generated_chunks(
             strict_max_length=strategy == "fixed",
             coverage_target_field=str(chunking["target_field"]),
         )
-        chunk_sha = sha256_file(chunk_file)
+        chunk_sha = (
+            str(existing_manifest["chunk_sha256"])
+            if reused
+            else sha256_file(chunk_file)
+        )
 
         qrels_result = resolve_chunk_qrels(
             chunk_qrels_path=chunk_qrels_path,

@@ -53,6 +53,18 @@ def sha256_file(path: str | Path) -> str:
     return digest.hexdigest()
 
 
+def sha256_text_variants(path: str | Path) -> set[str]:
+    """Return raw/LF/CRLF hashes while preserving all non-newline bytes."""
+    raw = Path(path).read_bytes()
+    lf = raw.replace(b"\r\n", b"\n")
+    crlf = lf.replace(b"\n", b"\r\n")
+    return {
+        hashlib.sha256(raw).hexdigest(),
+        hashlib.sha256(lf).hexdigest(),
+        hashlib.sha256(crlf).hexdigest(),
+    }
+
+
 def utc_now_iso() -> str:
     return datetime.now(timezone.utc).isoformat()
 
@@ -141,7 +153,7 @@ def check_manifest(manifest_path: Path, chunk_path: Path, signature: dict[str, A
 
     manifest_sha = manifest.get("chunk_sha256")
     actual_sha = sha256_file(chunk_path)
-    if manifest_sha != actual_sha:
+    if manifest_sha not in sha256_text_variants(chunk_path):
         raise ValueError(
             "Chunk Manifest SHA256 불일치: "
             f"manifest={manifest_sha}, actual={actual_sha}"

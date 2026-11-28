@@ -1,5 +1,7 @@
 """검색 결과의 순위를 이용해 검색 성능을 계산한다."""
 
+from __future__ import annotations
+
 
 # Context Precision / Recall 계산
 def calculate_context_metrics(

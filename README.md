@@ -1,5 +1,10 @@
 # 🔎 YouthAsk — RAG Retrieval System
 
+> **DB 공유 방식 변경:** 코드·설정·실험 결과는 Git으로 공유하고 Chroma DB는 별도 전달합니다.
+> 기존 DB가 필요한 팀원은 이 변경을 pull하기 전에 `indexes/chroma/`를 저장소 밖에 백업하세요.
+> pull 시 기존 추적 DB가 삭제될 수 있습니다.
+> [DB 백업·모델별 전달 폴더·복원 방법](docs/local_index_sharing.md)
+
 > 청년정책 데이터를 기반으로 검색 파이프라인을 구현하고, 검색 성능을 정량적으로 평가·개선하는 프로젝트
 
 ## 📌 Project Overview

@@ -235,3 +235,11 @@ data/indexes/**/link_lists.bin
 # Local smoke-test inputs, configs, indexes, logs, and results.
 /smoke_checks/
 /.venv-smoke/
+
+# Generated Chroma indexes and runtime manifests are shared separately.
+/indexes/chroma/**
+!/indexes/chroma/.gitkeep
+
+# Local experiment environments and manually exported DB archives.
+/.venv-*/
+/db-exports/
