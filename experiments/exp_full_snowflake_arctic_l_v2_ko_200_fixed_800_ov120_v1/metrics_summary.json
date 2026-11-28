@@ -1,0 +1,30 @@
+{
+  "document_hit_at_1": 0.91,
+  "document_hit_at_3": 0.96,
+  "document_hit_at_5": 0.965,
+  "document_mrr": 0.9329166666666666,
+  "chunk_hit_at_1": 0.83,
+  "chunk_hit_at_3": 0.925,
+  "chunk_hit_at_5": 0.93,
+  "chunk_mrr": 0.8729166666666667,
+  "average_retrieval_latency_ms": 14.887213000056363,
+  "p95_retrieval_latency_ms": 21.30589999796939,
+  "retrieval_failure_count": 0,
+  "evaluation_query_count": 200,
+  "evaluation_ks": [
+    1,
+    3,
+    5
+  ],
+  "context_total_query_count": 200,
+  "context_metrics_version": "context_eval_200_v1",
+  "context_k": 5,
+  "context_precision_at_5": 0.8683333333333336,
+  "context_precision_evaluated_query_count": 200,
+  "context_precision_unevaluated_query_count": 0,
+  "context_precision_status": "complete",
+  "context_recall_at_5": 0.9203408266860045,
+  "context_recall_evaluated_query_count": 197,
+  "context_recall_unevaluated_query_count": 3,
+  "context_recall_status": "partial"
+}

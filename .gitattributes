@@ -1,1 +1,1 @@
-indexes/chroma/** filter=lfs diff=lfs merge=lfs -text
+# Generated indexes/chroma artifacts stay local (see .gitignore).
